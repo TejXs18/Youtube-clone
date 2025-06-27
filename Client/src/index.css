@@ -1,0 +1,19 @@
+body {
+  margin:0;
+  font-family: 'Roboto', sans-serif;
+}
+
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+::-webkit-scrollbar{
+  width: 0.5rem;
+  height: 0.5rem;
+}
+::-webkit-scrollbar-thumb{
+  background-color: grey;
+  border-radius: 5rem;
+}

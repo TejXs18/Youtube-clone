@@ -1,0 +1,77 @@
+.comments_Sub_form_comments {
+  display: flex;
+  flex-direction: column; /* Stack input, button, and comments vertically */
+  width: 100%;
+  max-width: 700px;
+  margin-top: 1rem;
+}
+
+  .comment_ibox {
+  width: 100%;
+  padding: 0.6rem 1rem;
+  background-color: transparent;
+  border: none;
+  border-bottom: 2px solid grey;
+  color: wheat;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+  .comment_add_btn_comments {
+  cursor: pointer;
+  border: 2px solid transparent;
+  border-bottom: 2px solid rgb(64, 64, 64);
+  background-color: rgba(255, 255, 255, 0.05);
+  color: aliceblue;
+  font-size: 1rem;
+  padding: 0.5rem;
+  width: max-content;
+  align-self: flex-start;
+}
+
+  
+  .comment_add_btn_comments:hover {
+    border: 2px solid rgba(64, 64, 64, 0.05);
+    border-bottom: 2px solid rgb(64, 64, 64);
+    background-color: rgba(240, 248, 255, 0.05);
+  }
+  
+  .display_comment_container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+  
+  /** display comment **/
+  
+  .comment_body {
+    color: rgb(197, 197, 197);
+    margin: 0;
+    margin-top: 0.5rem;
+  }
+  .usercommented {
+  color: #aaa;
+  font-size: 0.9rem;
+  margin: 0.25rem 0;
+}
+
+  .EditDel_DisplayComment {
+    padding: 0.2rem;
+    margin: 0;
+    margin-bottom: 0.8rem;
+    color: rgba(44, 85, 209, 0.696);
+    cursor: pointer;
+  }
+  
+    .EditDel_DisplayComment i {
+      padding: 0.2rem;
+    }
+
+    .comment_block {
+  background-color: rgba(255, 255, 255, 0.03);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
