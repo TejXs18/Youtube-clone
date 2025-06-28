@@ -7,7 +7,7 @@ export const uploadvideo=async(req,res)=>{
             const file=new videofile({
                 videotitle:req.body.title,
                 filename:req.file.originalname,
-                filepath:req.file.path,
+                filepath:req.file.path.replace(/\\/g, '/');,
                 filetype:req.file.mimetype,
                 filesize:req.file.size,
                 videochanel:req.body.chanel,
