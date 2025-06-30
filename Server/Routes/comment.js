@@ -7,6 +7,7 @@ import {
   likecomment,
   dislikecomment
 } from "../Controllers/Comment.js";
+import { translateComment } from "../Controllers/Translate.js";
 import auth from "../middleware/auth.js";
 
 const router = express.Router();
