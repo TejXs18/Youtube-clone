@@ -3,6 +3,7 @@ import './Comment.css';
 import moment from 'moment';
 import { useSelector, useDispatch } from 'react-redux';
 import { editcomment, deletecomment } from '../../action/comment';
+import axios from 'axios'; 
 
 const Displaycomments = ({
   cid,
@@ -59,19 +60,12 @@ const Displaycomments = ({
 
   const handleTranslate = async () => {
     try {
-      const res = await fetch('https://libretranslate.de/translate', {
-        method: 'POST',
-        body: JSON.stringify({
-          q: commentbody,
-          source: 'auto',
-          target: 'en',
-          format: 'text'
-        }),
-        headers: { 'Content-Type': 'application/json' }
+      const res = await axios.post('https://youtube-clone-pd9i.onrender.com/comment/translate', {
+        q: commentbody,
+        target: 'en'
       });
 
-      const data = await res.json();
-      setTranslatedText(data.translatedText);
+      setTranslatedText(res.data.translatedText);
     } catch (error) {
       console.error('Translation error:', error);
       alert('Failed to translate the comment.');
