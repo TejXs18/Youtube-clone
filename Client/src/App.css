@@ -1,38 +1,77 @@
-.Chanel_logo_App{
+.Chanel_logo_App {
   width: 2.2rem;  
   height: 2.2rem;
   margin: auto;
   border-radius: 100%;
   background-color: rgb(224,227,214);
   display: flex;
+  align-items: center;
+  justify-content: center;
 }
-.fstChar_logo_App{
+
+.fstChar_logo_App {
   margin: auto;
   color: black;
   font-weight: bolder;
   cursor: pointer;
+  font-size: 1rem;
 }
 
-.container_Pages_App{
+.container_Pages_App {
   display: flex;
   background-color: rgb(57, 56, 56);
+  height: 100vh;
+  overflow: hidden;
 }
-.container2_Pages_App{
+
+.container2_Pages_App {
   width: calc(100vw - 5rem);
+  margin-left: 5rem;    /* Add this */
   height: calc(100vh - 3.65rem);
   border-top: 2px solid rgba(154, 146, 146, 0.45);
   overflow-y: auto;
+  padding: 1rem;
+  box-sizing: border-box;
 }
-.video_box_app{
+
+/* Make container2_Pages_App full width on smaller devices */
+@media (max-width: 768px) {
+  .container2_Pages_App {
+    width: 100vw;
+    margin-left: 0;
+  }
+  .container_Pages_App {
+    flex-direction: column;
+  }
+}
+
+/* Responsive video box */
+.video_box_app {
   width: 21rem;
   height: 17rem;
   margin-bottom: 1rem;
   border: 2px solid transparent;
+  flex-shrink: 0;
 }
+
 video {
   background-color: rgba(8,8,8,0.662);
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
 }
-.dot{
+
+/* Make video box adapt on smaller screens */
+@media (max-width: 768px) {
+  .video_box_app {
+    width: 90vw;
+    height: auto;
+    aspect-ratio: 16/9;
+  }
+}
+
+.dot {
   height: 4px;
   width: 4px;
   border-radius: 100%;

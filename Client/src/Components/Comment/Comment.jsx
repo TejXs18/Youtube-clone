@@ -1,63 +1,53 @@
-import React, { useState } from 'react'
-import './Comment.css'
-import Displaycomments from './Displaycomments'
-import {useSelector} from 'react-redux'
-import { useDispatch } from 'react-redux'
-import { postcomment } from '../../action/comment'
+import React, { useState } from 'react';
+import './Comment.css';
+import Displaycomments from './Displaycomments';
+import { useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
+import { postcomment } from '../../action/comment';
 
 const Comment = ({ videoId }) => {
-  const [commentText, setCommentText] = useState("")
-  const dispatch=useDispatch()
-const currentUser = useSelector(state => state.currentuserreducer);
-  const commentList=useSelector(state=>state.commentreducer)
-  // const commentList = [
-  //   {
-  //     _id: 1,
-  //     commentbody: 'hello 1',
-  //     commenton: new Date(),
-  //     usercommented: 'abc 1',
-  //     videoid: 1,
-  //   },
-  //   {
-  //     _id: 2,
-  //     commentbody: 'hello 2',
-  //     commenton: new Date(),
-  //     usercommented: 'abc 2',
-  //     videoid: 2,
-  //   },
-  // ]
+  const [commentText, setCommentText] = useState('');
+  const dispatch = useDispatch();
+  const currentUser = useSelector(state => state.currentuserreducer);
+  const commentList = useSelector(state => state.commentreducer);
+
+  const specialCharRegex = /[^a-zA-Z0-9\s\u0900-\u097F.,!?]/;
 
   const handleOnSubmit = (e) => {
-    e.preventDefault()
+    e.preventDefault();
     if (currentUser) {
       if (!commentText.trim()) {
-        alert('Please type your comment!')
+        alert('Please type your comment!');
+      } else if (specialCharRegex.test(commentText)) {
+        alert('Special characters are not allowed.');
       } else {
-        dispatch((postcomment({
+        dispatch(postcomment({
           videoid: videoId,
-         userid: currentUser?.result._id,
+          userid: currentUser?.result._id,
           commentbody: commentText,
-          usercommented: currentUser.result.name
-        })))
-        console.log("Comment submitted:", commentText)
-        setCommentText("") // clear input after submission
+          usercommented: currentUser.result.name,
+          commentcity: currentUser.result.city || 'Unknown'
+        }));
+        console.log('Comment submitted:', commentText);
+        setCommentText('');
       }
     }
-  }
+  };
 
   return (
     <>
       <form className='comments_sub_form_comments' onSubmit={handleOnSubmit}>
         <input
-          type="text"
+          type='text'
           onChange={(e) => setCommentText(e.target.value)}
           placeholder='Add comment ...'
           className='comment_ibox'
           value={commentText}
         />
-        <input type="submit" value='Add' className='comment_add_btn_comments' />
-        <div className="display_comment_container">
-          {commentList?.data.filter((q) => q.videoid === videoId)
+        <input type='submit' value='Add' className='comment_add_btn_comments' />
+        <div className='display_comment_container'>
+          {commentList?.data
+            .filter((q) => q.videoid === videoId)
             .reverse()
             .map((m) => (
               <Displaycomments
@@ -67,12 +57,15 @@ const currentUser = useSelector(state => state.currentuserreducer);
                 commentbody={m.commentbody}
                 commenton={m.commenton}
                 usercommented={m.usercommented}
+                commentcity={m.commentcity}
+                likes={m.likes}
+                dislikes={m.dislikes}
               />
             ))}
         </div>
       </form>
     </>
-  )
-}
+  );
+};
 
-export default Comment
+export default Comment;

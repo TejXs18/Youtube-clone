@@ -1,5 +1,7 @@
 import axios from "axios"
-const API=axios.create({baseURL:`http://localhost:5000`})
+// const API=axios.create({baseURL:`http://localhost:5000`})
+const API=axios.create({baseURL:`https://youtube-clone-pd9i.onrender.com`})
+
 
 API.interceptors.request.use((req)=>{
     if(localStorage.getItem("Profile")){
@@ -22,6 +24,10 @@ export const postcomment=(commentdata)=>API.post('/comment/post',commentdata)
 export const deletecomment=(id)=>API.delete(`/comment/delete/${id}`)
 export const editcomment=(id,commentbody)=>API.patch(`/comment/edit/${id}`,{commentbody})
 export const getallcomment=()=>API.get('/comment/get')
+
+export const likecomment = (id, userId) => API.patch(`/comment/like`, { id, userId });
+export const dislikecomment = (id, userId) => API.patch(`/comment/dislike`, { id, userId });
+
 
 export const addtohistory=(historydata)=>API.post("/video/history",historydata)
 export const getallhistory=()=>API.get('/video/getallhistory')

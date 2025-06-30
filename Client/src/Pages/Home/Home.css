@@ -1,19 +1,62 @@
-.navigation_Home{
+.navigation_Home {
     color: white;
-    background-color: rgb(37,37,37);
+    background-color: rgb(37, 37, 37);
     position: sticky;
+    top: 0;
     display: flex;
     overflow-x: auto;
-    top: 0;
-    border-bottom: 2px solid rgb(128,128,128,0.27);
+    border-bottom: 2px solid rgba(128, 128, 128, 0.27);
+    white-space: nowrap;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    scroll-snap-type: x mandatory;
+    padding: 0.3rem 0.5rem;
 }
-.btn_nav_home{
-    background-color: rgb(46,46,46);
+
+.navigation_Home::-webkit-scrollbar {
+    display: none;
+}
+
+.btn_nav_home {
+    background-color: rgb(46, 46, 46);
     margin: 0.5rem;
-    padding: 0.5rem;
+    padding: 0.5rem 1rem;
     border-radius: 45px;
     cursor: pointer;
+    flex-shrink: 0;
+    font-size: 0.9rem;
+    scroll-snap-align: start;
+    min-width: 80px; /* ensures minimum button size */
+    text-align: center;
+    user-select: none;
 }
-.btn_nav_home:hover{
-    background-color: rgb(128,128,128);
+
+.btn_nav_home:hover {
+    background-color: rgb(128, 128, 128);
+}
+
+@media (max-width: 768px) {
+    .btn_nav_home {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+        margin: 0.3rem;
+        min-width: 60px;
+    }
+
+    .navigation_Home {
+        padding: 0.3rem 0.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .btn_nav_home {
+        padding: 0.3rem 0.6rem;
+        font-size: 0.8rem;
+        margin: 0.25rem;
+        min-width: 50px;
+    }
+
+    .navigation_Home {
+        padding: 0.2rem 0.4rem;
+    }
 }

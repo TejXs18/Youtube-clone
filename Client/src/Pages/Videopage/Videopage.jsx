@@ -62,7 +62,7 @@ const Videopage = () => {
       <div className="container2_videoPage">
         <div className="video_display_screen_videoPage">
           <video
-            src={`http://localhost:5000/${vv?.filepath}`}
+            src={`https://youtube-clone-pd9i.onrender.com/${vv?.filepath}`}
             className="video_ShowVideo_videoPage"
             controls
           ></video>

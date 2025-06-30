@@ -1,47 +1,120 @@
 .SearchBar_Container {
-    margin: auto;
-    flex-grow: 2;
-    display: flex;
-    height: 2rem;
+  margin: auto;
+  flex-grow: 1;
+  display: flex;
+  height: 4rem;
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+  /* transform: translateY(-2.5rem); */
+}
+
+.SearchBar_Container2 {
+  margin: auto;
+  width: 100%;
+  /* height: 2rem; */
+}
+
+.search_div {
+  display: flex;
+  align-items: center;
+  position: relative;
+  z-index: 91;
+  width: 100%;
+  max-width: 30rem;
+  margin: auto;
+  min-width: 0;
+  /* height: 50%; */
+}
+
+.iBox_SearchBar {
+  background-color: rgb(18, 18, 18);
+  width: 100%;
+  max-width: 30rem;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  color: white;
+  font-size: large;
+  padding: 0.2rem 0.2rem 0.2rem 2rem;
+  height: 2rem;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.searchIcon_SearchBar {
+  cursor: pointer;
+  padding: 0.75rem;
+  width: 2rem;
+  border-radius: 0.1rem;
+  background-color: rgb(78, 78, 78);
+  color: aliceblue;
+}
+
+.searchIcon_SearchBar:hover {
+  background-color: rgb(71, 71, 71);
+}
+
+.Mic_SearchBar {
+  border-radius: 100%;
+  padding: 0.5rem;
+  background-color: rgb(51, 51, 51);
+  color: whitesmoke;
+  margin-left: 0.5rem;
+}
+
+/* Responsive styles */
+
+@media (max-width: 768px) {
+  .SearchBar_Container {
+    width: 100%;
   }
-  .SearchBar_Container2 {
-    margin: auto;
-  }
+
   .search_div {
-    display: flex;
-    margin: auto;
-    position: relative;
-    z-index: 91;
+    width: 100%;
+    max-width: 100%;
   }
+
   .iBox_SearchBar {
-    background-color: rgb(18, 18, 18);
-    width: 30rem;
-    border: 1px solid rgba(128, 128, 128, 0.4);
-    color: white;
-    font-size: large;
-    padding: 0.2rem;
-    height: 2rem;
-    padding-left: 2rem;
+    max-width: 20rem;
+    font-size: medium;
   }
-  .searchIcon_SearchBar{
-      cursor: pointer;
-      padding: 0.75rem;
-      width: 2rem;
-      border-radius: 0.1rem;
-      background-color: rgb(78, 78, 78);
-      color: aliceblue;
+
+  .searchIcon_SearchBar {
+    padding: 0.5rem;
+    width: 1.8rem;
   }
-  .searchIcon_SearchBar:hover{
-      background-color: rgb(71, 71, 71);
+
+  .Mic_SearchBar {
+    padding: 0.4rem;
+    margin-left: 0.4rem;
   }
-  .Mic_SearchBar{
-      border-radius: 100%;
-      padding: 0.5rem;
-      background-color: rgb(51, 51, 51);
+}
+
+@media (max-width: 480px) {
+  .SearchBar_Container {
+    height: 1.8rem;
+    width: 100%;
   }
-  
-  .vid_bell_Navbar,
-  .Mic_SearchBar{
-      color: whitesmoke;
-      margin: auto 0.7rem;
+
+  .search_div {
+    width: 100%;
+    max-width: 100%;
   }
+
+  .iBox_SearchBar {
+    width: 100%;
+    max-width: none;
+    font-size: 0.9rem;
+    padding-left: 1.5rem;
+    height: 1.8rem;
+  }
+
+  .searchIcon_SearchBar {
+    padding: 0.4rem;
+    width: 1.6rem;
+  }
+
+  .Mic_SearchBar {
+    padding: 0.3rem;
+    margin-left: 0.3rem;
+  }
+}

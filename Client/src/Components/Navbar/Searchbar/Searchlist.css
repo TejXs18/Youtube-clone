@@ -1,20 +1,58 @@
-.Container_SearchList{
+.Container_SearchList {
     background-color: white;
     width: 90.75%;
+    max-width: 600px;
     position: absolute;
     top: 2.7rem;
     height: fit-content;
     z-index: 91;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    border-radius: 4px;
+    overflow-y: auto;
+    max-height: 300px;
 }
+
 .titleItem {
-  cursor: pointer;
-  padding: 0.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: background-color 0.2s;
+    cursor: pointer;
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background-color 0.2s;
+    color: black;
 }
 
 .titleItem:hover {
-  background-color: #333;
+    background-color: #333;
+    color: white;
+}
+
+/* Responsive */
+
+@media (max-width: 768px) {
+    .Container_SearchList {
+        width: 95%;
+        max-width: 100%;
+        top: 2.5rem;
+        max-height: 250px;
+    }
+
+    .titleItem {
+        padding: 0.4rem;
+        gap: 0.4rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .Container_SearchList {
+        width: 95%;
+        top: 2.3rem;
+        max-height: 200px;
+    }
+
+    .titleItem {
+        padding: 0.3rem;
+        gap: 0.3rem;
+        font-size: 0.9rem;
+    }
 }

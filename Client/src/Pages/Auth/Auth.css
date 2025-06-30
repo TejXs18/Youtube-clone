@@ -7,34 +7,49 @@
     right: 0;
     box-sizing: border-box;
     display: flex;
-  }
-  .Auth_container2 {
-      padding: 0.5rem;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.75);
+}
+
+.Auth_container2 {
+    padding: 0.5rem;
     display: flex;
-    position: absolute;
-    right: 2.5rem;
+    position: relative;
+    right: 0;
     background-color: rgb(16, 16, 16);
-    top: 1rem;
+    top: 0;
     text-align: center;
     flex-direction: column;
-    border: px solid rgba(102, 102, 102, 0.6);
+    border: none;
     color: aliceblue;
-    z-index: 500;
-  }
-  .User_Details {
+    z-index: 501;
+    max-width: 350px;
+    width: 90vw;
+    border-radius: 8px;
+    box-sizing: border-box;
+    margin: auto;
+}
+
+.User_Details {
     margin: 0 auto;
-    padding: 0.7rem;
+    padding: 0.7rem 1.2rem 0.7rem 0.9rem;
     display: flex;
     border-bottom: 2px solid grey;
-    padding-inline-start: 1.2rem 0.9rem;
-  }
-  .email_Auth {
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.email_Auth {
     font-size: larger;
     padding: 0.2rem 0.5rem;
     font-weight: bolder;
-    margin: auto;
-  }
-  .btn_Auth {
+    margin: auto 0;
+    word-break: break-word;
+}
+
+.btn_Auth {
     color: aliceblue;
     font-weight: bolder;
     font-size: larger;
@@ -42,30 +57,78 @@
     border: 0;
     margin: 0.2rem 0;
     background-color: transparent;
-  }
-  .btn_Auth:hover {
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.btn_Auth:hover {
     background-color: rgb(47, 47, 47);
-  }
-  .btns_Auth {
+}
+
+.btns_Auth {
     padding: 1.5rem 0;
     display: flex;
     flex-direction: column;
     cursor: pointer;
     text-decoration: none;
-  }
-  .Channel_logo_App {
-  background-color: #3ea6ff;
-  color: rgb(255, 255, 255);
-  width: 2.2rem;
-  height: 2.2rem;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  cursor: pointer;
+    gap: 0.8rem;
+}
+
+.Channel_logo_App {
+    background-color: #3ea6ff;
+    color: rgb(255, 255, 255);
+    width: 2.2rem;
+    height: 2.2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    cursor: pointer;
+    flex-shrink: 0;
 }
 
 .fstChar_logo_App {
-  font-size: 1rem;
+    font-size: 1rem;
+}
+
+/* Responsive */
+
+@media (max-width: 768px) {
+    .Auth_container2 {
+        max-width: 90vw;
+        padding: 1rem;
+    }
+
+    .User_Details {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .email_Auth {
+        font-size: 1rem;
+        padding: 0;
+    }
+
+    .btn_Auth {
+        font-size: 1rem;
+        padding: 0.6rem;
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .Auth_container2 {
+        padding: 0.8rem;
+    }
+
+    .btns_Auth {
+        padding: 1rem 0;
+    }
+
+    .btn_Auth {
+        font-size: 0.9rem;
+        padding: 0.5rem;
+    }
 }

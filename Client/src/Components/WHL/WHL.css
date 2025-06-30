@@ -3,38 +3,83 @@
     display: flex;
     padding: 0.5rem;
     justify-content: space-around;
-  }
-  .box_WHL {
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.box_WHL {
     width: 45%;
     padding: 0.8rem;
-    margin: 00.8rem;
+    margin: 0.8rem 0;
     color: white;
     display: flex;
     flex-direction: column;
-  }
-  .box_WHL b {
+}
+
+.box_WHL b {
     font-size: 3rem;
     color: white;
-  }
-  .clear_History_btn {
+}
+
+/* Fix margin typo (was 00.8rem -> 0.8rem) */
+
+.clear_History_btn {
     color: grey;
     font-size: 1.5rem;
     cursor: pointer;
     font-weight: bold;
     margin: auto 0;
-  }
-  .clear_History_btn:hover {
+}
+
+.clear_History_btn:hover {
     color: white;
-  }
-  .rightSide_whl h1 {
+}
+
+.rightSide_whl h1 {
     text-decoration: underline;
     color: white;
-  }
-  .leftside_whl {
+}
+
+.leftside_whl {
     background-color: rgba(0, 0, 0, 0.153);
     height: 50vh;
-  }
-  
-  .whl_list{
-      overflow-y: auto;
-  }
+    overflow-y: auto;
+}
+
+/* Make the list scrollable */
+.whl_list {
+    overflow-y: auto;
+    max-height: 100%;
+}
+
+/* Responsive */
+
+@media (max-width: 768px) {
+    .box_WHL {
+        width: 90%;
+        margin: 0.5rem auto;
+    }
+
+    .box_WHL b {
+        font-size: 2.2rem;
+    }
+
+    .container_whl {
+        justify-content: center;
+        padding: 0.5rem 0.3rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .box_WHL b {
+        font-size: 1.8rem;
+    }
+
+    .clear_History_btn {
+        font-size: 1.2rem;
+    }
+
+    .leftside_whl {
+        height: 40vh;
+    }
+}

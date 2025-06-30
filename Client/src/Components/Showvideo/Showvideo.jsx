@@ -7,7 +7,7 @@ function Showvideo({ vid }) {
   return (
     <>
       <Link to={`/videopage/${vid._id}`}>
-        <video src={`http://localhost:5000/${vid?.filepath}`} className='video_ShowVideo' />
+        <video src={`https://youtube-clone-pd9i.onrender.com/${vid?.filepath}`} className='video_ShowVideo' />
       </Link>
       <div className="video_description">
         <div className="Channel_logo_App">
@@ -16,7 +16,7 @@ function Showvideo({ vid }) {
           </div>
         </div>
         <div className="video_details">
-          <p className="title_vid_Show_Video">{vid?.title}</p>
+          <p className="title_vid_Show_Video">{vid?.videotitle}</p>
           <pre className="vid_views_UploadTime">{vid?.uploader}</pre>
           <pre className="vid_views_UploadTime">
             {vid?.views} views <div className="dot"></div> {moment(vid.createdat).fromNow()}
