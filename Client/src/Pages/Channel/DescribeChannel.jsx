@@ -33,7 +33,7 @@ import {useSelector} from 'react-redux'
             <b>{currenChannel?.name}</b>
             <p>{currenChannel?.desc}</p>
         </div>
-        {currentUser?.result._id===currenChannel?._id&&(
+                {currentUser?.result._id === currenChannel?._id && (
             <>
             <p className="editbtn_chanel" onClick={()=>setEditCreateChannelbtn(true)}>
                 <FaEdit/>

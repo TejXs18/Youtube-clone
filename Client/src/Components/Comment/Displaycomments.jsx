@@ -3,22 +3,11 @@ import './Comment.css';
 import moment from 'moment';
 import { useSelector, useDispatch } from 'react-redux';
 import { editcomment, deletecomment } from '../../action/comment';
-import axios from 'axios'; 
 
-const Displaycomments = ({
-  cid,
-  commentbody,
-  userid,
-  commenton,
-  usercommented,
-  commentcity,
-  likes = [],
-  dislikes = []
-}) => {
+const Displaycomments = ({ cid, commentbody, userid, commenton, usercommented, commentcity, likes = [], dislikes = [] }) => {
   const [edit, setEdit] = useState(false);
   const [editedCommentBody, setEditedCommentBody] = useState('');
   const [commentid, setCommentId] = useState('');
-  const [translatedText, setTranslatedText] = useState('');
   const dispatch = useDispatch();
   const currentUser = useSelector(state => state.currentuserreducer);
 
@@ -58,18 +47,9 @@ const Displaycomments = ({
     }
   };
 
-  const handleTranslate = async () => {
-    try {
-      const res = await axios.post('https://youtube-clone-pd9i.onrender.com/comment/translate', {
-        q: commentbody,
-        target: 'en'
-      });
-
-      setTranslatedText(res.data.translatedText);
-    } catch (error) {
-      console.error('Translation error:', error);
-      alert('Failed to translate the comment.');
-    }
+  const handleTranslate = () => {
+    const url = `https://translate.google.com/?sl=auto&tl=en&text=${encodeURIComponent(commentbody)}`;
+    window.open(url, '_blank');
   };
 
   return (
@@ -94,12 +74,7 @@ const Displaycomments = ({
           </button>
         </div>
       ) : (
-        <>
-          <p className="comment_body">{commentbody}</p>
-          {translatedText && (
-            <p className="translated_comment"><strong>Translated:</strong> {translatedText}</p>
-          )}
-        </>
+        <p className="comment_body">{commentbody}</p>
       )}
 
       <p className="usercommented">

@@ -16,34 +16,46 @@ import { jwtDecode } from "jwt-decode";
 
 const Navbar = ({ toggleDrawer, setEditCreateChannelbtn }) => {
   const [authBtn, setAuthBtn] = useState(false);
-  const [user, setuser] = useState(null);
-  const [profile, setprofile] = useState({});
+  const [user, setUser] = useState(null);
   const dispatch = useDispatch();
   const currentUser = useSelector(state => state.currentuserreducer);
 
-  const successlogin = () => {
-    if (profile.email) {
-      dispatch(login({ email: profile.email }));
-    }
-  };
-
   const google_login = useGoogleLogin({
-    onSuccess: tokenResponse => setuser(tokenResponse),
+    onSuccess: tokenResponse => setUser(tokenResponse),
     onError: error => console.log("Login Failed", error)
   });
 
   useEffect(() => {
     if (user) {
       axios.get(`https://www.googleapis.com/oauth2/v1/userinfo?access_token=${user.access_token}`, {
-        headers: { Authorization: `Bearer ${user.access_token}`, Accept: 'application/json' }
+        headers: {
+          Authorization: `Bearer ${user.access_token}`,
+          Accept: 'application/json'
+        }
       })
-        .then((res) => {
-          setprofile(res.data);
-          successlogin();
-        })
-        .catch(err => console.log(err));
+      .then((res) => {
+        const googleUser = res.data;
+
+        const userProfile = {
+          result: {
+            name: googleUser.name,
+            email: googleUser.email,
+            picture: googleUser.picture,
+            _id: googleUser.id, // treating Google ID as user ID
+          },
+          token: user.access_token
+        };
+
+        // ✅ Store user immediately
+        localStorage.setItem("Profile", JSON.stringify(userProfile));
+        dispatch(setcurrentuser(userProfile));
+
+        // Optional: trigger backend login logic
+        dispatch(login({ email: googleUser.email }));
+      })
+      .catch(err => console.log("Google user fetch error:", err));
     }
-  }, [user]);
+  }, [user, dispatch]);
 
   const logout = () => {
     dispatch(setcurrentuser(null));

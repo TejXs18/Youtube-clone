@@ -27,7 +27,7 @@ const Createeditchannel=({setEditCreateChannelbtn})=> {
             dispatch(updatechaneldata(currentUser?.result._id,{name:name,desc:desc}))
             setEditCreateChannelbtn(false)
             setTimeout(()=>{
-                dispatch({email:currentUser.result.email})
+                dispatch(login({email:currentUser.result.email}))
 
             },5000)
         }

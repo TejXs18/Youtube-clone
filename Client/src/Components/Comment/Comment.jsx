@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import './Comment.css';
 import Displaycomments from './Displaycomments';
-import { useSelector } from 'react-redux';
-import { useDispatch } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { postcomment } from '../../action/comment';
 
 const Comment = ({ videoId }) => {
@@ -13,24 +12,39 @@ const Comment = ({ videoId }) => {
 
   const specialCharRegex = /[^a-zA-Z0-9\s\u0900-\u097F.,!?]/;
 
-  const handleOnSubmit = (e) => {
+  const handleOnSubmit = async (e) => {
     e.preventDefault();
-    if (currentUser) {
-      if (!commentText.trim()) {
-        alert('Please type your comment!');
-      } else if (specialCharRegex.test(commentText)) {
-        alert('Special characters are not allowed.');
-      } else {
-        dispatch(postcomment({
-          videoid: videoId,
-          userid: currentUser?.result._id,
-          commentbody: commentText,
-          usercommented: currentUser.result.name,
-          commentcity: currentUser.result.city || 'Unknown'
-        }));
-        console.log('Comment submitted:', commentText);
-        setCommentText('');
-      }
+    if (!currentUser) return;
+
+    if (!commentText.trim()) {
+      alert('Please type your comment!');
+      return;
+    }
+
+    if (specialCharRegex.test(commentText)) {
+      alert('Special characters are not allowed.');
+      return;
+    }
+
+    try {
+      // ✅ Fetch city from IP
+      const locRes = await fetch('https://ipapi.co/json/');
+      const locData = await locRes.json();
+      const city = locData.city || 'Unknown';
+
+      dispatch(postcomment({
+        videoid: videoId,
+        userid: currentUser.result._id,
+        commentbody: commentText,
+        usercommented: currentUser.result.name,
+        commentcity: city
+      }));
+
+      console.log('Comment submitted:', commentText, 'City:', city);
+      setCommentText('');
+    } catch (error) {
+      console.error('City fetch failed:', error);
+      alert('Could not fetch your city.');
     }
   };
 

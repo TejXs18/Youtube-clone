@@ -1,0 +1,62 @@
+.group-list-container {
+  padding: 1rem;
+  color: #fff;
+}
+
+.group-search-input,
+.create-group-form input,
+.create-group-form textarea {
+  width: 100%;
+  padding: 0.6rem;
+  margin: 0.5rem 0;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+.group-cards-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.group-card {
+  background: #222;
+  padding: 1rem;
+  border-radius: 8px;
+  width: 250px;
+  text-decoration: none;
+  color: #fff;
+  border: 1px solid #444;
+  transition: 0.3s;
+}
+
+.group-card:hover {
+  background-color: #333;
+}
+
+.create-group-form,
+.group-details {
+  background: #1c1c1c;
+  padding: 1rem;
+  border-radius: 8px;
+  color: white;
+}
+
+.invite-section input {
+  padding: 0.5rem;
+  margin-top: 0.5rem;
+  margin-right: 0.5rem;
+}
+
+button {
+  background: #ff0000;
+  color: white;
+  border: none;
+  padding: 0.6rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:hover {
+  opacity: 0.9;
+}

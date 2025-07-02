@@ -10,6 +10,8 @@ import  Likedvideo  from './Pages/Likedvideo/Likedvideo.jsx';
 import Watchhistory from './Pages/Watchhistory.jsx/Watchhistory.jsx';
 import Watchlater from './Pages/Watchlater/Watchlater.jsx';
 import Yourvideo from './Pages/Yourvideo/Yourvideo.jsx';
+import GroupMain from './Pages/Group/GroupMain.jsx';
+import GroupDetail from './Components/Groups/GroupDetails.jsx'
 
 function Allroutes({setVideoUploadPage,setEditCreateChannelbtn}) {
   return (
@@ -23,6 +25,8 @@ function Allroutes({setVideoUploadPage,setEditCreateChannelbtn}) {
       <Route path="/Watchlater" element={<Watchlater/>}/>
       <Route path="/Yourvideo" element={<Yourvideo/>}/>
       <Route path='/channel/:cid' element={<Channel setEditCreateChannelbtn={setEditCreateChannelbtn} setVideoUploadPage={setVideoUploadPage}/>}/>
+      <Route path="/groups" element={<GroupMain />} />
+      <Route path="/group/:id" element={<GroupDetail />} />
     </Routes>
   );
 }

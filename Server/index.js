@@ -7,16 +7,12 @@ import videoroutes from './Routes/video.js'
 import userroutes from "./Routes/User.js"
 import path from 'path'
 import commentroutes from './Routes/comment.js'
+import groupRoutes from './Routes/group.js';
 
 
 dotenv.config()
 const app=express()
 console.log("🟢 Server starting...");
-
-app.get('/ping', (req, res) => {
-  console.log('🔁 /ping hit');
-  res.status(200).send('pong');
-});
 
 
 app.use(cors())
@@ -37,12 +33,12 @@ app.get('/', (req, res) => {
 app.use('/user',userroutes)
 app.use('/video',videoroutes)
 app.use('/comment',commentroutes)
+app.use('/group', groupRoutes);
+
 const PORT= process.env.PORT || 5000
 
 
-// app.listen(PORT, '0.0.0.0', () => {
-//   console.log(`Server running on Port ${PORT}`);
-// });
+
 const DB_URL=process.env.DB_URL
 mongoose.connect(DB_URL).then(() => {
   console.log("Mongodb Database connected");
