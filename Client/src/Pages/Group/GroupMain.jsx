@@ -3,9 +3,11 @@ import { useDispatch, useSelector } from 'react-redux';
 import GroupList from '../../Components/Groups/GroupList';
 import { getAllGroups, searchGroups } from '../../action/group';
 
+
 const GroupMain = () => {
   const dispatch = useDispatch();
-  const groups = useSelector((state) => state.groupReducer);
+  const groups = useSelector((state) => state.groupreducer.data || []);
+  console.log('Groups from Redux state:', groups);
   const [filteredGroups, setFilteredGroups] = useState([]);
 
   useEffect(() => {

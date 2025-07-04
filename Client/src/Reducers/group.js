@@ -22,7 +22,7 @@ const groupreducer = (state = { data: [] }, action) => {
       return { ...state, data: updatedGroups };
     }
 
-    case "FETCH_GROUPS":
+    
     case "GET_ALL_GROUPS": // ✅ Add this line
       return { ...state, data: action.payload };
 

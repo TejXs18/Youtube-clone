@@ -8,7 +8,6 @@ router.post('/create', auth, createGroup);
 router.patch('/add-member', auth, addMember);
 router.get('/search', auth, searchGroups);
 
-// ✅ Add this new route
-router.get('/getall', auth, getAllGroups);
+router.get('/all', auth, getAllGroups);
 
 export default router;

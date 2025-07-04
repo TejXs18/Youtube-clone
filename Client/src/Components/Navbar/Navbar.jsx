@@ -16,12 +16,12 @@ import { jwtDecode } from "jwt-decode";
 
 const Navbar = ({ toggleDrawer, setEditCreateChannelbtn }) => {
   const [authBtn, setAuthBtn] = useState(false);
-  const [user, setUser] = useState(null);
+  const [user, setuser] = useState(null);
   const dispatch = useDispatch();
   const currentUser = useSelector(state => state.currentuserreducer);
 
   const google_login = useGoogleLogin({
-    onSuccess: tokenResponse => setUser(tokenResponse),
+    onSuccess: tokenResponse => setuser(tokenResponse),
     onError: error => console.log("Login Failed", error)
   });
 
@@ -33,27 +33,27 @@ const Navbar = ({ toggleDrawer, setEditCreateChannelbtn }) => {
           Accept: 'application/json'
         }
       })
-      .then((res) => {
-        const googleUser = res.data;
+        .then((res) => {
+          const googleUser = res.data;
 
-        const userProfile = {
-          result: {
-            name: googleUser.name,
-            email: googleUser.email,
-            picture: googleUser.picture,
-            _id: googleUser.id, // treating Google ID as user ID
-          },
-          token: user.access_token
-        };
+          const userProfile = {
+            result: {
+              name: googleUser.name,
+              email: googleUser.email,
+              picture: googleUser.picture,
+              _id: googleUser.id,
+            },
+            token: user.access_token
+          };
 
-        // ✅ Store user immediately
-        localStorage.setItem("Profile", JSON.stringify(userProfile));
-        dispatch(setcurrentuser(userProfile));
+          // Save user
+          localStorage.setItem("Profile", JSON.stringify(userProfile));
+          dispatch(setcurrentuser(userProfile));
 
-        // Optional: trigger backend login logic
-        dispatch(login({ email: googleUser.email }));
-      })
-      .catch(err => console.log("Google user fetch error:", err));
+          // Optional backend auth
+          dispatch(login({ email: googleUser.email }));
+        })
+        .catch(err => console.log("Google user fetch error:", err));
     }
   }, [user, dispatch]);
 
@@ -64,26 +64,41 @@ const Navbar = ({ toggleDrawer, setEditCreateChannelbtn }) => {
   };
 
   useEffect(() => {
-    const token = currentUser?.token;
-    if (token) {
-      const decodetoken = jwtDecode(token);
-      if (decodetoken.exp * 1000 < new Date().getTime()) logout();
+    const profile = localStorage.getItem("Profile");
+    if (profile) {
+      try {
+        const parsedProfile = JSON.parse(profile);
+        const token = parsedProfile.token;
+
+        const decodedToken = jwtDecode(token); // May fail if access_token is not JWT
+        if (decodedToken.exp * 1000 < new Date().getTime()) {
+          logout();
+        } else {
+          dispatch(setcurrentuser(parsedProfile));
+        }
+      } catch (err) {
+        console.error("Token decode error:", err);
+        logout();
+      }
     }
-    dispatch(setcurrentuser(JSON.parse(localStorage.getItem("Profile"))));
-  }, [currentUser?.token, dispatch]);
+  }, [dispatch]);
 
   return (
     <>
       <div className='Container_Navbar'>
         <div className="Navbar_Row_Top">
           <div className="Burger_Logo_Navbar">
-            <div className="burger" onClick={() => toggleDrawer()}>
+            <div className="burger" onClick={toggleDrawer}>
               <p></p><p></p><p></p>
             </div>
             <Link to='/' className='logo_div_Navbar'>
               <img src={logo} alt="logo" />
               <p className='logo_title_navbar'>Your-tube</p>
             </Link>
+          </div>
+
+          <div>
+            <Link to="/groups" className="logo_title_navbar">Groups</Link>
           </div>
 
           <div className="Searchbar_Wrapper desktop-only">

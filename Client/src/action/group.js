@@ -1,14 +1,28 @@
 // actions/group.js
 import * as api from '../Api/index';
+import axios from 'axios';
 
 export const getAllGroups = () => async (dispatch) => {
   try {
-    const { data } = await api.getAllGroups();
-    dispatch({ type: "GET_ALL_GROUPS", payload: data });
+    const profile = JSON.parse(localStorage.getItem("Profile"));
+    const token = profile?.token;
+
+    const BACKEND_URL = 'https://youtube-clone-pd9i.onrender.com';
+
+    const { data } = await axios.get(`${BACKEND_URL}/group/all`, {
+      headers: { Authorization: `Bearer ${token}` }
+      
+    });
+    console.log("Token being sent:", token)
+
+    dispatch({ type: 'GET_ALL_GROUPS', payload: data });
   } catch (error) {
-    console.error("Error fetching all groups:", error.response?.data || error.message || error);
+    console.error(error);
   }
 };
+
+
+
 
 
 
