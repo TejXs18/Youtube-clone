@@ -2,7 +2,7 @@ import express from "express"
 import mongoose from "mongoose"
 import dotenv from "dotenv"
 import cors from "cors"
-// import bodyParser from "body-parser"
+
 import videoroutes from './Routes/video.js'
 import userroutes from "./Routes/User.js"
 import path from 'path'
