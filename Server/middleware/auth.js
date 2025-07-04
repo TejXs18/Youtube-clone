@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import jwt from "jsonwebtoken"; 
-=======
 import jwt from "jsonwebtoken";
->>>>>>> 7ce220e14734a223dc42bd89fbc5a091f6cc3352
 const auth = (req, res, next) => {
   console.log("Token:", token);
 console.log("JWT_SECRET:", process.env.JWT_SECRET);
