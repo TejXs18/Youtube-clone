@@ -88,17 +88,19 @@ const Navbar = ({ toggleDrawer, setEditCreateChannelbtn }) => {
       <div className='Container_Navbar'>
         <div className="Navbar_Row_Top">
           <div className="Burger_Logo_Navbar">
-            <div className="burger" onClick={toggleDrawer}>
+            <div 
+              className="burger" 
+              onClick={toggleDrawer}
+              role="button"
+              aria-label="Toggle menu"
+              tabIndex={0}
+            >
               <p></p><p></p><p></p>
             </div>
             <Link to='/' className='logo_div_Navbar'>
-              <img src={logo} alt="logo" />
+              <img src={logo} alt="Your-tube logo" />
               <p className='logo_title_navbar'>Your-tube</p>
             </Link>
-          </div>
-
-          <div>
-            <Link to="/groups" className="logo_title_navbar">Groups</Link>
           </div>
 
           <div className="Searchbar_Wrapper desktop-only">
@@ -106,23 +108,50 @@ const Navbar = ({ toggleDrawer, setEditCreateChannelbtn }) => {
           </div>
 
           <div className="Right_Section_Navbar">
-            <RiVideoAddLine size={22} className='vid_bell_Navbar' />
-            <div className="apps_box">
+            <RiVideoAddLine 
+              size={22} 
+              className='vid_bell_Navbar' 
+              role="button"
+              aria-label="Upload video"
+              tabIndex={0}
+            />
+            <div 
+              className="apps_box"
+              role="button"
+              aria-label="Apps menu"
+              tabIndex={0}
+            >
               {[...Array(9)].map((_, i) => <p key={i} className='appBox'></p>)}
             </div>
-            <IoMdNotificationsOutline size={22} className='vid_bell_Navbar' />
+            <IoMdNotificationsOutline 
+              size={22} 
+              className='vid_bell_Navbar'
+              role="button"
+              aria-label="Notifications"
+              tabIndex={0}
+            />
             <div className='Auth_cont_Navbar'>
               {currentUser ? (
-                <div className="Channel_logo_App" onClick={() => setAuthBtn(true)}>
+                <div 
+                  className="Channel_logo_App" 
+                  onClick={() => setAuthBtn(true)}
+                  role="button"
+                  aria-label="Account menu"
+                  tabIndex={0}
+                >
                   <p className='fstChar_logo_App'>
                     {(currentUser?.result?.name || currentUser?.result?.email)?.charAt(0).toUpperCase()}
                   </p>
                 </div>
               ) : (
-                <p className='Auth_Btn' onClick={google_login}>
+                <button 
+                  className='Auth_Btn' 
+                  onClick={google_login}
+                  aria-label="Sign in"
+                >
                   <BiUserCircle size={22} />
                   <b>Sign in</b>
-                </p>
+                </button>
               )}
             </div>
           </div>

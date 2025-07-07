@@ -1,80 +1,177 @@
+/* Channel Logo Component */
 .Chanel_logo_App {
-  width: 2.2rem;  
-  height: 2.2rem;
+  width: 2.5rem;
+  height: 2.5rem;
   margin: auto;
-  border-radius: 100%;
-  background-color: rgb(224,227,214);
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgb(224,227,214), rgb(200,203,190));
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.Chanel_logo_App:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .fstChar_logo_App {
   margin: auto;
-  color: black;
-  font-weight: bolder;
+  color: #1a1a1a;
+  font-weight: 700;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 1.1rem;
+  user-select: none;
 }
 
+/* Main Layout Container */
 .container_Pages_App {
   display: flex;
-  background-color: rgb(57, 56, 56);
-  height: 100vh;
+  background: linear-gradient(135deg, rgb(15, 15, 15), rgb(25, 25, 25));
+  min-height: 100vh;
   overflow: hidden;
+  position: relative;
 }
 
+/* Content Container */
 .container2_Pages_App {
   width: calc(100vw - 5rem);
-  margin-left: 5rem;    /* Add this */
-  height: calc(100vh - 3.65rem);
-  border-top: 2px solid rgba(154, 146, 146, 0.45);
+  margin-left: 5rem;
+  min-height: calc(100vh - 4rem);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   overflow-y: auto;
-  padding: 1rem;
+  overflow-x: hidden;
+  padding: 1.5rem;
   box-sizing: border-box;
+  background-color: rgb(15, 15, 15);
+  transition: all 0.3s ease;
 }
 
-/* Make container2_Pages_App full width on smaller devices */
+/* Enhanced Video Container */
+.video_box_app {
+  width: 21rem;
+  height: 12rem;
+  margin-bottom: 1.5rem;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.video_box_app:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Enhanced Video Styling */
+video {
+  background: linear-gradient(135deg, rgba(8,8,8,0.8), rgba(20,20,20,0.8));
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+video:hover {
+  transform: scale(1.02);
+}
+
+/* Utility Elements */
+.dot {
+  height: 4px;
+  width: 4px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.6);
+  margin: auto 0.5rem;
+  flex-shrink: 0;
+}
+
+/* Loading States */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 3rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.error-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 3rem;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+}
+
+/* Tablet Responsive Design */
+@media (max-width: 1024px) {
+  .container2_Pages_App {
+    width: calc(100vw - 4rem);
+    margin-left: 4rem;
+    padding: 1.2rem;
+  }
+
+  .video_box_app {
+    width: 18rem;
+    height: 10rem;
+  }
+}
+
+/* Mobile Responsive Design */
 @media (max-width: 768px) {
   .container2_Pages_App {
     width: 100vw;
     margin-left: 0;
+    padding: 1rem;
+    min-height: calc(100vh - 6rem);
   }
+
   .container_Pages_App {
     flex-direction: column;
   }
-}
 
-/* Responsive video box */
-.video_box_app {
-  width: 21rem;
-  height: 17rem;
-  margin-bottom: 1rem;
-  border: 2px solid transparent;
-  flex-shrink: 0;
-}
-
-video {
-  background-color: rgba(8,8,8,0.662);
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 4px;
-}
-
-/* Make video box adapt on smaller screens */
-@media (max-width: 768px) {
   .video_box_app {
-    width: 90vw;
+    width: 100%;
+    max-width: 90vw;
     height: auto;
     aspect-ratio: 16/9;
+    margin: 0 auto 1rem auto;
+  }
+
+  .Chanel_logo_App {
+    width: 2.2rem;
+    height: 2.2rem;
+  }
+
+  .fstChar_logo_App {
+    font-size: 1rem;
   }
 }
 
-.dot {
-  height: 4px;
-  width: 4px;
-  border-radius: 100%;
-  background-color: white;
-  margin: auto 0.5rem;
+/* Small Mobile Design */
+@media (max-width: 480px) {
+  .container2_Pages_App {
+    padding: 0.8rem;
+    min-height: calc(100vh - 8rem);
+  }
+
+  .video_box_app {
+    width: 100%;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+  }
+
+  .Chanel_logo_App {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .fstChar_logo_App {
+    font-size: 0.9rem;
+  }
 }

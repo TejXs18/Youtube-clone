@@ -1,34 +1,56 @@
+/* Modern Auth Modal Overlay */
 .Auth_container {
     width: 100vw;
     height: 100vh;
-    position: absolute;
-    z-index: 500;
+    position: fixed;
+    z-index: 1000;
     top: 0;
-    right: 0;
+    left: 0;
     box-sizing: border-box;
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: rgba(0, 0, 0, 0.75);
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    animation: fadeIn 0.3s ease-out;
 }
 
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Glassmorphism Auth Modal */
 .Auth_container2 {
-    padding: 0.5rem;
+    padding: 2rem;
     display: flex;
     position: relative;
-    right: 0;
-    background-color: rgb(16, 16, 16);
-    top: 0;
+    background: rgba(20, 20, 20, 0.95);
+    backdrop-filter: blur(20px);
     text-align: center;
     flex-direction: column;
-    border: none;
-    color: aliceblue;
-    z-index: 501;
-    max-width: 350px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    z-index: 1001;
+    max-width: 400px;
     width: 90vw;
-    border-radius: 8px;
+    border-radius: 16px;
     box-sizing: border-box;
     margin: auto;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    animation: slideUp 0.3s ease-out;
+    transform-origin: center;
+}
+
+@keyframes slideUp {
+    from { 
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .User_Details {
