@@ -47,11 +47,13 @@
   align-items: center;
   text-decoration: none;
   gap: 0.5rem;
+  line-height: 1;
 }
 
 .logo_div_Navbar img {
   height: 2.5rem;
   width: auto;
+  display: block;
 }
 
 .logo_title_navbar {
@@ -61,6 +63,11 @@
   font-size: 1.2rem;
   text-decoration: none;
   transition: color 0.2s ease;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+  display: flex;
+  align-items: center;
 }
 
 .logo_title_navbar:hover {
@@ -83,18 +90,26 @@
 }
 
 .apps_box {
-  width: 25px;
-  height: 25px;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-around;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  grid-template-columns: repeat(3, 4px);
+  grid-template-rows: repeat(3, 4px);
+  gap: 2px;
+  padding: 0;
+  align-items: center;
+  justify-items: center;
+  cursor: default;
+  pointer-events: none;
+  margin: 0 0.3rem;
 }
 
 .appBox {
-  border: 1px solid white;
-  margin: 0.1rem;
-  width: 2px;
-  height: 2px;
+  width: 4px;
+  height: 4px;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 1px;
+  display: block;
 }
 
 .vid_bell_Navbar {

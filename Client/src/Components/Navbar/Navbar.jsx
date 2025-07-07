@@ -115,13 +115,8 @@ const Navbar = ({ toggleDrawer, setEditCreateChannelbtn }) => {
               aria-label="Upload video"
               tabIndex={0}
             />
-            <div 
-              className="apps_box"
-              role="button"
-              aria-label="Apps menu"
-              tabIndex={0}
-            >
-              {[...Array(9)].map((_, i) => <p key={i} className='appBox'></p>)}
+            <div className="apps_box">
+              {[...Array(9)].map((_, i) => <div key={i} className='appBox'></div>)}
             </div>
             <IoMdNotificationsOutline 
               size={22} 
