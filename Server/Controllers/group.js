@@ -1,27 +1,54 @@
 import Group from "../Models/group.js";
+import User from "../Models/Auth.js";
 
 // Create a group
 export const createGroup = async (req, res) => {
-  const { name } = req.body;
+  const { name, description } = req.body;
   try {
-    const group = new Group({ name, members: [req.userId], createdBy: req.userId });
+    const group = new Group({ 
+      name, 
+      description: description || '',
+      members: [req.userId], 
+      createdBy: req.userId 
+    });
     await group.save();
-    res.status(201).json(group);
+    const populatedGroup = await Group.findById(group._id).populate('members', 'name email');
+    res.status(201).json(populatedGroup);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 };
 
-// Add member to group
+// Add member to group by email
 export const addMember = async (req, res) => {
-  const { groupId, userIdToAdd } = req.body;
+  const { groupId, email } = req.body;
   try {
-    const group = await Group.findById(groupId);
-    if (!group.members.includes(userIdToAdd)) {
-      group.members.push(userIdToAdd);
-      await group.save();
+    // Find user by email
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found with this email' });
     }
-    res.status(200).json(group);
+
+    // Find group and add member
+    const group = await Group.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ error: 'Group not found' });
+    }
+
+    // Check if user is already a member
+    if (group.members.includes(user._id)) {
+      return res.status(400).json({ error: 'User is already a member of this group' });
+    }
+
+    // Add user to group
+    group.members.push(user._id);
+    await group.save();
+    
+    const populatedGroup = await Group.findById(groupId).populate('members', 'name email');
+    res.status(200).json({ 
+      message: `${user.name} has been added to the group!`,
+      group: populatedGroup 
+    });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }

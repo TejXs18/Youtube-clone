@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import GroupList from '../../Components/Groups/GroupList';
 import CreateGroup from '../../Components/Groups/CreateGroup';
 import { getAllGroups, searchGroups, createGroup } from '../../action/group';
+import '../../Components/Groups/Group.css';
 
 
 const GroupMain = () => {
@@ -31,8 +32,10 @@ const GroupMain = () => {
   };
 
   return (
-    <div style={{ padding: '1rem', color: '#fff' }}>
-      <h1 style={{ color: '#fff', marginBottom: '2rem' }}>Groups</h1>
+    <div className="group-list-container">
+      <div className="group-header">
+        <h1>Groups</h1>
+      </div>
       
       {/* Create Group Section */}
       <div style={{ marginBottom: '2rem' }}>

@@ -32,10 +32,14 @@ export const searchGroups = (query) => async (dispatch) => {
 export const addMemberToGroup = (memberData) => async (dispatch) => {
   try {
     const { data } = await api.addMember(memberData);
-    dispatch({ type: 'ADD_MEMBER', payload: data });
+    dispatch({ type: 'ADD_MEMBER', payload: data.group });
     // Refresh groups after adding member
     dispatch(getAllGroups());
+    return data; // Return the response data including the message
   } catch (error) {
     console.error('Error adding member:', error);
+    const errorMessage = error.response?.data?.error || 'Failed to add member';
+    alert(errorMessage);
+    throw error;
   }
 };
