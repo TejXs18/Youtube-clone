@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import GroupList from '../../Components/Groups/GroupList';
-import { getAllGroups, searchGroups } from '../../action/group';
+import CreateGroup from '../../Components/Groups/CreateGroup';
+import { getAllGroups, searchGroups, createGroup } from '../../action/group';
 
 
 const GroupMain = () => {
@@ -25,9 +26,26 @@ const GroupMain = () => {
     }
   };
 
+  const handleCreateGroup = (groupData) => {
+    dispatch(createGroup(groupData));
+  };
+
   return (
-    <div style={{ padding: '1rem' }}>
-      <GroupList groups={filteredGroups.length ? filteredGroups : groups} onSearch={handleSearch} />
+    <div style={{ padding: '1rem', color: '#fff' }}>
+      <h1 style={{ color: '#fff', marginBottom: '2rem' }}>Groups</h1>
+      
+      {/* Create Group Section */}
+      <div style={{ marginBottom: '2rem' }}>
+        <CreateGroup onCreate={handleCreateGroup} />
+      </div>
+      
+      {/* Groups List Section */}
+      <div>
+        <GroupList 
+          groups={filteredGroups.length ? filteredGroups : groups} 
+          onSearch={handleSearch} 
+        />
+      </div>
     </div>
   );
 };

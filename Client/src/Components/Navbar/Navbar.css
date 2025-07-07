@@ -59,6 +59,12 @@
   font-weight: bold;
   white-space: nowrap;
   font-size: 1.2rem;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.logo_title_navbar:hover {
+  color: #ff0000;
 }
 
 /* Center: Searchbar */

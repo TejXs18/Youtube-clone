@@ -1,19 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Comment.css';
 import moment from 'moment';
 import { useSelector, useDispatch } from 'react-redux';
 import { editcomment, deletecomment } from '../../action/comment';
+import axios from 'axios';
+
+const BASE_URL = "https://youtube-clone-pd9i.onrender.com";
 
 const Displaycomments = ({ cid, commentbody, userid, commenton, usercommented, commentcity, likes = [], dislikes = [] }) => {
   const [edit, setEdit] = useState(false);
   const [editedCommentBody, setEditedCommentBody] = useState('');
   const [commentid, setCommentId] = useState('');
+  const [showTranslateOptions, setShowTranslateOptions] = useState(false);
+  const [translatedText, setTranslatedText] = useState('');
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [supportedLanguages, setSupportedLanguages] = useState({});
+  const [showTranslation, setShowTranslation] = useState(false);
   const dispatch = useDispatch();
   const currentUser = useSelector(state => state.currentuserreducer);
 
   const userId = currentUser?.result?._id;
   const hasLiked = likes.includes(userId);
   const hasDisliked = dislikes.includes(userId);
+
+  // Fetch supported languages on component mount
+  useEffect(() => {
+    const fetchLanguages = async () => {
+      try {
+        const response = await axios.get(`${BASE_URL}/comment/languages`);
+        setSupportedLanguages(response.data);
+      } catch (error) {
+        console.error('Error fetching languages:', error);
+      }
+    };
+    fetchLanguages();
+  }, []);
 
   const handleEdit = (ctid, ctbdy) => {
     setEdit(true);
@@ -47,9 +68,28 @@ const Displaycomments = ({ cid, commentbody, userid, commenton, usercommented, c
     }
   };
 
+  const handleTranslateToLanguage = async (targetLanguage) => {
+    setIsTranslating(true);
+    try {
+      const response = await axios.post(`${BASE_URL}/comment/translate/${cid}`, {
+        targetLanguage
+      });
+      setTranslatedText(response.data.translatedText);
+      setShowTranslation(true);
+      setShowTranslateOptions(false);
+    } catch (error) {
+      console.error('Translation error:', error);
+      alert('Translation failed. Please try again.');
+    }
+    setIsTranslating(false);
+  };
+
   const handleTranslate = () => {
-    const url = `https://translate.google.com/?sl=auto&tl=en&text=${encodeURIComponent(commentbody)}`;
-    window.open(url, '_blank');
+    setShowTranslateOptions(!showTranslateOptions);
+  };
+
+  const toggleOriginalText = () => {
+    setShowTranslation(!showTranslation);
   };
 
   return (
@@ -74,7 +114,25 @@ const Displaycomments = ({ cid, commentbody, userid, commenton, usercommented, c
           </button>
         </div>
       ) : (
-        <p className="comment_body">{commentbody}</p>
+        <div className="comment_text_container">
+          {showTranslation && translatedText ? (
+            <div className="translated-comment">
+              <p className="comment_body translated">{translatedText}</p>
+              <small className="translation-label">Translated text</small>
+            </div>
+          ) : (
+            <p className="comment_body">{commentbody}</p>
+          )}
+          
+          {translatedText && (
+            <button 
+              className="toggle-translation-btn" 
+              onClick={toggleOriginalText}
+            >
+              {showTranslation ? 'Show Original' : 'Show Translation'}
+            </button>
+          )}
+        </div>
       )}
 
       <p className="usercommented">
@@ -92,6 +150,28 @@ const Displaycomments = ({ cid, commentbody, userid, commenton, usercommented, c
           </span>
         )}
       </div>
+      
+      {/* Translation Options Dropdown */}
+      {showTranslateOptions && (
+        <div className="translation-options">
+          <h4>Select Language:</h4>
+          {isTranslating ? (
+            <p>Translating...</p>
+          ) : (
+            <div className="language-grid">
+              {Object.entries(supportedLanguages).slice(0, 10).map(([code, language]) => (
+                <button 
+                  key={code} 
+                  className="language-btn"
+                  onClick={() => handleTranslateToLanguage(code)}
+                >
+                  {language}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

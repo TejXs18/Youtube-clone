@@ -1,16 +1,16 @@
 import jwt from "jsonwebtoken";
+
 const auth = (req, res, next) => {
-  console.log("Token:", token);
-console.log("JWT_SECRET:", process.env.JWT_SECRET);
-
-
   try {
-    console.log('Auth header:', req.headers.authorization);
     const token = req.headers.authorization?.split(" ")[1];
+    console.log("Token:", token); // ✅ Now token is declared
+    console.log("JWT_SECRET:", process.env.JWT_SECERT);
+
     if (!token) {
       return res.status(401).json({ message: "No token provided" });
     }
-    let decodedData = jwt.verify(token, process.env.JWT_SECERT);
+
+    const decodedData = jwt.verify(token, process.env.JWT_SECERT);
     req.userId = decodedData?.id;
     next();
   } catch (error) {

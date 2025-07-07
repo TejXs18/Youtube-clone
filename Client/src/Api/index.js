@@ -30,6 +30,8 @@ export const editcomment = (id, commentbody) => API.patch(`/comment/edit/${id}`,
 export const getallcomment = () => API.get('/comment/get');
 export const likecomment = (id, userId) => API.patch(`/comment/like`, { id, userId });
 export const dislikecomment = (id, userId) => API.patch(`/comment/dislike`, { id, userId });
+export const translateComment = (id, targetLanguage) => API.post(`/comment/translate/${id}`, { targetLanguage });
+export const getSupportedLanguages = () => API.get('/comment/languages');
 
 // History
 export const addtohistory = (historydata) => API.post("/video/history", historydata);
