@@ -16,6 +16,7 @@ const Displaycomments = ({ cid, commentbody, userid, commenton, usercommented, c
   const [isTranslating, setIsTranslating] = useState(false);
   const [supportedLanguages, setSupportedLanguages] = useState({});
   const [showTranslation, setShowTranslation] = useState(false);
+  const [translationError, setTranslationError] = useState('');
   const dispatch = useDispatch();
   const currentUser = useSelector(state => state.currentuserreducer);
 
@@ -70,6 +71,7 @@ const Displaycomments = ({ cid, commentbody, userid, commenton, usercommented, c
 
   const handleTranslateToLanguage = async (targetLanguage) => {
     setIsTranslating(true);
+    setTranslationError('');
     try {
       const response = await axios.post(`${BASE_URL}/comment/translate/${cid}`, {
         targetLanguage
@@ -79,7 +81,7 @@ const Displaycomments = ({ cid, commentbody, userid, commenton, usercommented, c
       setShowTranslateOptions(false);
     } catch (error) {
       console.error('Translation error:', error);
-      alert('Translation failed. Please try again.');
+      setTranslationError('Translation failed. Please try again.');
     }
     setIsTranslating(false);
   };
@@ -140,9 +142,9 @@ const Displaycomments = ({ cid, commentbody, userid, commenton, usercommented, c
       </p>
 
       <div className="comment_actions">
-        <button onClick={handleLike} disabled={hasLiked}>👍 {likes.length}</button>
-        <button onClick={handleDislike} disabled={hasDisliked}>👎 {dislikes.length}</button>
-        <button onClick={handleTranslate}>🌐 Translate</button>
+        <button type="button" onClick={handleLike} disabled={hasLiked}>👍 {likes.length}</button>
+        <button type="button" onClick={handleDislike} disabled={hasDisliked}>👎 {dislikes.length}</button>
+        <button type="button" onClick={handleTranslate}>🌐 Translate</button>
         {currentUser?.result._id === userid && (
           <span className="EditDel_DisplayComment">
             <i onClick={() => handleEdit(cid, commentbody)}>Edit</i>
@@ -156,19 +158,23 @@ const Displaycomments = ({ cid, commentbody, userid, commenton, usercommented, c
         <div className="translation-options">
           <h4>Select Language:</h4>
           {isTranslating ? (
-            <p>Translating...</p>
+            <p><span className="spinner" style={{marginRight: '0.5rem'}}>🔄</span>Translating...</p>
           ) : (
             <div className="language-grid">
               {Object.entries(supportedLanguages).slice(0, 10).map(([code, language]) => (
                 <button 
                   key={code} 
                   className="language-btn"
+                  type="button"
                   onClick={() => handleTranslateToLanguage(code)}
                 >
                   {language}
                 </button>
               ))}
             </div>
+          )}
+          {translationError && !isTranslating && (
+            <p className="translation-error" style={{color: 'red', marginTop: '0.5rem'}}>{translationError}</p>
           )}
         </div>
       )}

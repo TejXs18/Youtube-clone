@@ -13,6 +13,7 @@ import { login } from "../../action/auth";
 import { useGoogleLogin, googleLogout } from '@react-oauth/google';
 import { setcurrentuser } from '../../action/currentuser';
 import { jwtDecode } from "jwt-decode";
+import { MdVideoCall } from "react-icons/md";
 
 const Navbar = ({ toggleDrawer, setEditCreateChannelbtn }) => {
   const [authBtn, setAuthBtn] = useState(false);
@@ -114,6 +115,15 @@ const Navbar = ({ toggleDrawer, setEditCreateChannelbtn }) => {
               role="button"
               aria-label="Upload video"
               tabIndex={0}
+            />
+            <MdVideoCall 
+              size={24} 
+              className='vid_bell_Navbar' 
+              role="button"
+              aria-label="Video Call"
+              tabIndex={0}
+              style={{ marginLeft: '0.3rem' }}
+              onClick={() => window.location.href = '/call'}
             />
             <div className="apps_box">
               {[...Array(9)].map((_, i) => <div key={i} className='appBox'></div>)}

@@ -155,134 +155,99 @@
 }
 
 .toggle-translation-btn {
-  background: none;
-  border: none;
-  color: rgba(44, 85, 209, 0.696);
-  font-size: 0.8rem;
+  margin-top: 0.3rem;
+  background: #fffde7;
+  color: #fbc02d;
+  border: 1px solid #ffe082;
+  border-radius: 5px;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.95rem;
   cursor: pointer;
-  margin-top: 0.5rem;
-  text-decoration: underline;
-  padding: 0;
+  transition: background 0.2s, color 0.2s;
 }
 
 .toggle-translation-btn:hover {
-  color: rgba(44, 85, 209, 0.9);
+  background: #fff9c4;
+  color: #f9a825;
 }
 
 .translation-options {
-  background-color: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  margin-top: 0.7rem;
+  background: #f1f8e9;
+  border: 1px solid #c5e1a5;
   border-radius: 8px;
-  padding: 1rem;
-  margin-top: 1rem;
-}
-
-.translation-options h4 {
-  margin: 0 0 0.75rem 0;
-  color: rgb(197, 197, 197);
-  font-size: 0.9rem;
-  font-weight: normal;
+  padding: 0.7rem 1rem;
+  box-shadow: 0 2px 8px rgba(139, 195, 74, 0.08);
+  max-width: 350px;
 }
 
 .language-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
 }
 
 .language-btn {
-  background-color: rgba(255, 255, 255, 0.05);
-  color: aliceblue;
-  border: 2px solid transparent;
-  border-bottom: 2px solid rgb(64, 64, 64);
-  padding: 0.5rem 0.75rem;
-  border-radius: 4px;
+  background: #e3f2fd;
+  color: #1976d2;
+  border: 1px solid #90caf9;
+  border-radius: 5px;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.95rem;
   cursor: pointer;
-  font-size: 0.8rem;
-  transition: background-color 0.3s ease, border 0.3s ease;
+  transition: background 0.2s, color 0.2s;
 }
 
 .language-btn:hover {
-  border: 2px solid rgba(64, 64, 64, 0.05);
-  border-bottom: 2px solid rgb(64, 64, 64);
-  background-color: rgba(240, 248, 255, 0.05);
+  background: #bbdefb;
+  color: #0d47a1;
 }
 
 .comment_actions {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
   flex-wrap: wrap;
 }
 
 .comment_actions button {
-  background: rgba(255, 255, 255, 0.05);
-  border: 2px solid transparent;
-  border-bottom: 2px solid rgb(64, 64, 64);
-  color: aliceblue;
-  padding: 0.4rem 0.6rem;
-  border-radius: 4px;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 0.35rem 0.9rem;
+  font-size: 1rem;
   cursor: pointer;
-  font-size: 0.8rem;
-  transition: background-color 0.3s ease, border 0.3s ease;
-}
-
-.comment_actions button:hover {
-  border: 2px solid rgba(64, 64, 64, 0.05);
-  border-bottom: 2px solid rgb(64, 64, 64);
-  background-color: rgba(240, 248, 255, 0.05);
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  margin-right: 0.2rem;
+  margin-bottom: 0.2rem;
+  outline: none;
 }
 
 .comment_actions button:disabled {
-  opacity: 0.6;
+  background: #e0e0e0;
+  color: #aaa;
   cursor: not-allowed;
-  background: rgba(255, 255, 255, 0.02);
 }
 
-.comment_actions button:disabled:hover {
-  background: rgba(255, 255, 255, 0.02);
-  border: 2px solid transparent;
-  border-bottom: 2px solid rgb(64, 64, 64);
+.comment_actions button:not(:disabled):hover {
+  background: #e3f2fd;
+  color: #1976d2;
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.08);
 }
 
-/* Responsive adjustments for translation features */
-@media (max-width: 768px) {
-  .language-grid {
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-    gap: 0.4rem;
+@media (max-width: 600px) {
+  .display_comment_box {
+    padding: 0.7rem 0.3rem;
+    font-size: 0.97rem;
   }
-  
-  .language-btn {
-    font-size: 0.75rem;
-    padding: 0.4rem 0.6rem;
-  }
-  
   .comment_actions {
     gap: 0.4rem;
+    flex-direction: column;
+    align-items: flex-start;
   }
-  
-  .comment_actions button {
-    font-size: 0.75rem;
-    padding: 0.3rem 0.5rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .language-grid {
-    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
-  }
-  
-  .language-btn {
-    font-size: 0.7rem;
-    padding: 0.3rem 0.5rem;
-  }
-  
   .translation-options {
-    padding: 0.75rem;
-  }
-  
-  .translation-options h4 {
-    font-size: 0.85rem;
+    max-width: 98vw;
+    padding: 0.5rem 0.3rem;
   }
 }

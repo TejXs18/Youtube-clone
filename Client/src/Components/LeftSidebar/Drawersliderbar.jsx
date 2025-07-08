@@ -1,7 +1,7 @@
 import React from 'react'
 import "./Leftsidebar.css"
 import { AiFillPlaySquare, AiOutlineHome, AiFillLike } from 'react-icons/ai'
-import { MdOutlineExplore, MdOutlineVideoLibrary, MdSubscriptions, MdOutlineWatchLater } from "react-icons/md"
+import { MdOutlineExplore, MdOutlineVideoLibrary, MdSubscriptions, MdOutlineWatchLater, MdOutlineGroup } from "react-icons/md"
 import { FaHistory } from 'react-icons/fa'
 import shorts from "./shorts.png"
 import { NavLink } from 'react-router-dom'
@@ -16,6 +16,13 @@ const Drawersliderbar = ({ toggledraw, toggledrawersidebar }) => {
               <div className="text_sidebar_icon">Home</div>
             </div>
           </NavLink>
+          <NavLink to={'/groups'} className="icon_sidebar_div">
+            <div>
+              <MdOutlineGroup size={22} className='icon_sidebar' style={{ margin: "auto 0.7rem" }} />
+              <div className="text_sidebar_icon">Groups</div>
+            </div>
+          </NavLink>
+          
           <div className="icon_sidebar_div">
             <div>
               <MdOutlineExplore size={22} className='icon_sidebar' style={{ margin: "auto 0.7rem" }} />

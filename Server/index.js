@@ -3,6 +3,8 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cors from "cors";
 import path from "path";
+import http from 'http';
+import { Server as SocketIOServer } from 'socket.io';
 
 import videoroutes from './Routes/video.js';
 import userroutes from "./Routes/User.js";
@@ -44,12 +46,51 @@ app.use('/video', videoroutes);
 app.use('/comment', commentroutes);
 app.use('/group', groupRoutes);
 
+const server = http.createServer(app);
+
+// Set up Socket.IO
+const io = new SocketIOServer(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST']
+  }
+});
+
+io.on('connection', (socket) => {
+  console.log('A user connected:', socket.id);
+
+  // Join a room for 1:1 or group call
+  socket.on('join-room', (roomId) => {
+    socket.join(roomId);
+    socket.to(roomId).emit('user-joined', socket.id);
+  });
+
+  // Relay offer
+  socket.on('offer', (data) => {
+    socket.to(data.roomId).emit('offer', data);
+  });
+
+  // Relay answer
+  socket.on('answer', (data) => {
+    socket.to(data.roomId).emit('answer', data);
+  });
+
+  // Relay ICE candidates
+  socket.on('ice-candidate', (data) => {
+    socket.to(data.roomId).emit('ice-candidate', data);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
+});
+
 const PORT = process.env.PORT || 5000;
 const DB_URL = process.env.DB_URL;
 
 mongoose.connect(DB_URL).then(() => {
   console.log("🟢 MongoDB connected");
-  app.listen(PORT, '0.0.0.0', () => {
+  server.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${PORT}`);
   });
 }).catch((error) => {

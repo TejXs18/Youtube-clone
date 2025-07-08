@@ -4,6 +4,8 @@ import './Home.css'
 // import vid from '../../Components/Video/vid.mp4'
 import Showvideogrid from '../../Components/Showvideogrid/Showvideogrid'
 import { useSelector } from 'react-redux'
+import { Link } from 'react-router-dom'
+
 const Home= ()=> {
   const vids =useSelector(state=>state.videoreducer)?.data?.filter(q=>q).reverse();
 
@@ -66,6 +68,16 @@ const Home= ()=> {
           })}
         </div>
         <Showvideogrid vid={vids}/>
+        <Link to="/call" style={{
+          display: 'inline-block',
+          margin: '1rem 0',
+          padding: '0.5rem 1.2rem',
+          background: '#1976d2',
+          color: '#fff',
+          borderRadius: '6px',
+          textDecoration: 'none',
+          fontWeight: 'bold',
+        }}>Start Video Call (Test)</Link>
       </div>
     </div>
   )
