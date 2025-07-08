@@ -59,29 +59,43 @@ const io = new SocketIOServer(server, {
 io.on('connection', (socket) => {
   console.log('A user connected:', socket.id);
 
-  // Join a room for 1:1 or group call
+  // Multi-user join logic
   socket.on('join-room', (roomId) => {
     socket.join(roomId);
+    // Get all users in the room except the new user
+    const usersInRoom = Array.from(io.sockets.adapter.rooms.get(roomId) || []).filter(id => id !== socket.id);
+    // Send the list to the new user
+    socket.emit('all-users', usersInRoom);
+    // Notify existing users about the new user
     socket.to(roomId).emit('user-joined', socket.id);
   });
 
   // Relay offer
   socket.on('offer', (data) => {
-    socket.to(data.roomId).emit('offer', data);
+    // data: { roomId, to, offer }
+    socket.to(data.to).emit('offer', { from: socket.id, offer: data.offer });
   });
 
   // Relay answer
   socket.on('answer', (data) => {
-    socket.to(data.roomId).emit('answer', data);
+    // data: { roomId, to, answer }
+    socket.to(data.to).emit('answer', { from: socket.id, answer: data.answer });
   });
 
   // Relay ICE candidates
   socket.on('ice-candidate', (data) => {
-    socket.to(data.roomId).emit('ice-candidate', data);
+    // data: { roomId, to, candidate }
+    socket.to(data.to).emit('ice-candidate', { from: socket.id, candidate: data.candidate });
   });
 
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
+    // Notify all rooms this user was in
+    for (const roomId of socket.rooms) {
+      if (roomId !== socket.id) {
+        socket.to(roomId).emit('user-left', socket.id);
+      }
+    }
   });
 });
 
