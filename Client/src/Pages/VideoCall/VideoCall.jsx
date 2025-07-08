@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 import './VideoCall.css';
 
-const SIGNALING_SERVER_URL = 'http://localhost:5000'; // Change if deployed
+const SIGNALING_SERVER_URL = 'https://youtube-clone-pd9i.onrender.com';
 const ICE_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }];
 const MAX_PEERS = 3; // 3 remote peers + self = 4
 
@@ -155,6 +155,7 @@ const VideoCall = () => {
   const handleJoin = async () => {
     if (!roomId.trim()) return;
     setJoined(true);
+    await startLocalStream();
   };
 
   // End call cleanup
