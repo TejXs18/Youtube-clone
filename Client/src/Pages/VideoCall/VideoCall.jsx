@@ -37,15 +37,16 @@ const VideoCall = () => {
         s.emit('join-room', roomId);
       });
       s.on('all-users', async (users) => {
+        await startLocalStream(); // Ensure local stream is ready before connecting
         setMessages(msgs => [...msgs, `Users in room: ${users.join(', ')}`]);
         console.log('[Socket] all-users:', users);
-        await startLocalStream();
         users.slice(0, MAX_PEERS).forEach(async (userId) => {
           console.log('[Peer] Creating connection to existing user:', userId);
           await createPeerConnection(userId, true, s);
         });
       });
       s.on('user-joined', async (userId) => {
+        await startLocalStream(); // Ensure local stream is ready before connecting
         setMessages(msgs => [...msgs, `User joined: ${userId}`]);
         console.log('[Socket] user-joined:', userId);
         await createPeerConnection(userId, false, s);
