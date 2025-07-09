@@ -17,6 +17,7 @@ const Displaycomments = ({ cid, commentbody, userid, commenton, usercommented, c
   const [supportedLanguages, setSupportedLanguages] = useState({});
   const [showTranslation, setShowTranslation] = useState(false);
   const [translationError, setTranslationError] = useState('');
+  const [sourceLanguage, setSourceLanguage] = useState('auto');
   const dispatch = useDispatch();
   const currentUser = useSelector(state => state.currentuserreducer);
 
@@ -74,14 +75,15 @@ const Displaycomments = ({ cid, commentbody, userid, commenton, usercommented, c
     setTranslationError('');
     try {
       const response = await axios.post(`${BASE_URL}/comment/translate/${cid}`, {
-        targetLanguage
+        targetLanguage,
+        sourceLanguage
       });
       setTranslatedText(response.data.translatedText);
       setShowTranslation(true);
       setShowTranslateOptions(false);
     } catch (error) {
       console.error('Translation error:', error);
-      setTranslationError('Translation failed. Please try again.');
+      setTranslationError('Translation failed. If your comment is in Hinglish, try selecting Hindi as the source language below.');
     }
     setIsTranslating(false);
   };
@@ -157,6 +159,14 @@ const Displaycomments = ({ cid, commentbody, userid, commenton, usercommented, c
       {showTranslateOptions && (
         <div className="translation-options">
           <h4>Select Language:</h4>
+          <div style={{ marginBottom: '0.5rem', color: '#fbc02d', fontSize: '0.95rem' }}>
+            If your comment is in Hinglish, try selecting Hindi as the source language:
+            <select value={sourceLanguage} onChange={e => setSourceLanguage(e.target.value)} style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 4 }}>
+              <option value="auto">Auto-detect</option>
+              <option value="hi">Hindi</option>
+              <option value="en">English</option>
+            </select>
+          </div>
           {isTranslating ? (
             <p><span className="spinner" style={{marginRight: '0.5rem'}}>🔄</span>Translating...</p>
           ) : (

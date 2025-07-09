@@ -4,10 +4,11 @@ import { Link } from 'react-router-dom';
 import moment from 'moment';
 
 function Showvideo({ vid }) {
+  if (!vid?.filepath) return <div className="video_unavailable">Video unavailable</div>;
   return (
     <>
       <Link to={`/videopage/${vid._id}`}>
-        <video src={`https://youtube-clone-pd9i.onrender.com/${vid?.filepath}`} className='video_ShowVideo' />
+        <video src={`https://youtube-clone-pd9i.onrender.com/${vid?.filepath}`} className='video_ShowVideo' onError={e => { e.target.style.display = 'none'; alert('Video failed to load!'); }} />
       </Link>
       <div className="video_description">
         <div className="Channel_logo_App">

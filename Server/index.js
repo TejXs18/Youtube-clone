@@ -51,8 +51,9 @@ const server = http.createServer(app);
 // Set up Socket.IO
 const io = new SocketIOServer(server, {
   cors: {
-    origin: '*',
-    methods: ['GET', 'POST']
+    origin: allowedOrigins, // Use the same allowedOrigins array as Express
+    methods: ['GET', 'POST'],
+    credentials: true
   }
 });
 
