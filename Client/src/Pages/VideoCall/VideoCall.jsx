@@ -24,16 +24,38 @@ const VideoCall = () => {
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [myId, setMyId] = useState(null);
   const [mediaError, setMediaError] = useState('');
+  const [connectionStatus, setConnectionStatus] = useState('Not connected');
+
+  // Test socket connection
+  const testSocketConnection = () => {
+    console.log('🟢 [Test] Testing socket connection...');
+    setMessages(msgs => [...msgs, '🟢 Testing socket connection...']);
+    
+    const testSocket = io(SIGNALING_SERVER_URL);
+    
+    testSocket.on('connect', () => {
+      console.log('🟢 [Test] Socket test successful!');
+      setMessages(msgs => [...msgs, '🟢 Socket test successful!']);
+      testSocket.disconnect();
+    });
+    
+    testSocket.on('connect_error', (error) => {
+      console.error('🔴 [Test] Socket test failed:', error);
+      setMessages(msgs => [...msgs, `🔴 Socket test failed: ${error.message}`]);
+    });
+  };
 
   // Setup socket and join room
   useEffect(() => {
     if (joined && !socket) {
       console.log('🟢 [Frontend] Creating socket connection to:', SIGNALING_SERVER_URL);
+      setConnectionStatus('Connecting to server...');
       const s = io(SIGNALING_SERVER_URL);
       setSocket(s);
       
       s.on('connect', () => {
         setMyId(s.id);
+        setConnectionStatus('Connected to server');
         setMessages(msgs => [...msgs, `🟢 Connected to signaling server. My ID: ${s.id}`]);
         console.log('🟢 [Frontend] Socket connected. My ID:', s.id);
         console.log('🟢 [Frontend] Joining room:', roomId);
@@ -42,12 +64,14 @@ const VideoCall = () => {
 
       s.on('connect_error', (error) => {
         console.error('🔴 [Frontend] Socket connection error:', error);
+        setConnectionStatus('Connection failed');
         setMessages(msgs => [...msgs, `🔴 Connection error: ${error.message}`]);
       });
 
       s.on('all-users', async (users) => {
         console.log('🟢 [Frontend] Received all-users:', users);
         setMessages(msgs => [...msgs, `🟢 Users in room: ${users.join(', ')}`]);
+        setConnectionStatus(`Connected - ${users.length} other users in room`);
         
         // Ensure local stream is ready before connecting
         await startLocalStream();
@@ -62,6 +86,7 @@ const VideoCall = () => {
       s.on('user-joined', async (userId) => {
         console.log('🟢 [Frontend] User joined:', userId);
         setMessages(msgs => [...msgs, `🟢 User joined: ${userId}`]);
+        setConnectionStatus(`Connected - New user joined: ${userId}`);
         
         // Ensure local stream is ready before connecting
         await startLocalStream();
@@ -136,6 +161,7 @@ const VideoCall = () => {
       s.on('user-left', (userId) => {
         console.log('🔴 [Frontend] User left:', userId);
         setMessages(msgs => [...msgs, `🔴 User left: ${userId}`]);
+        setConnectionStatus(`Connected - User left: ${userId}`);
         
         if (peerConnections.current[userId]) {
           peerConnections.current[userId].close();
@@ -309,6 +335,7 @@ const VideoCall = () => {
     setJoined(false);
     setSocket(null);
     setRemoteStreams([]);
+    setConnectionStatus('Not connected');
   };
 
   // Screen sharing logic
@@ -421,6 +448,19 @@ const VideoCall = () => {
         </ul>
       </div>
       <h2 className="video-call-title">Video Call (Beta)</h2>
+      
+      {/* Connection Status */}
+      <div style={{ 
+        background: connectionStatus.includes('Connected') ? '#1b5e20' : '#d32f2f', 
+        color: 'white', 
+        padding: '8px 16px', 
+        borderRadius: '4px', 
+        marginBottom: '16px',
+        textAlign: 'center'
+      }}>
+        <strong>Status:</strong> {connectionStatus}
+      </div>
+      
       {!joined ? (
         <div className="video-call-join-box">
           <input
@@ -432,6 +472,9 @@ const VideoCall = () => {
           />
           <button onClick={handleJoin} className="video-call-btn join-btn">
             Join Call
+          </button>
+          <button onClick={testSocketConnection} className="video-call-btn" style={{ background: '#ff9800' }}>
+            Test Connection
           </button>
         </div>
       ) : (
@@ -453,7 +496,7 @@ const VideoCall = () => {
               return (
                 <div key={userId}>
                   <video ref={remoteVideoRefs.current[userId]} autoPlay playsInline className="video-call-video" />
-                  <div className="video-call-label">Friend {idx + 1}</div>
+                  <div className="video-call-label">Friend {idx + 1} ({userId.slice(0, 8)}...)</div>
                 </div>
               );
             })}
