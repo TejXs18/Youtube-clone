@@ -57,44 +57,77 @@ const io = new SocketIOServer(server, {
   }
 });
 
+// Track rooms and users for debugging
+const roomUsers = new Map(); // roomId -> Set of socketIds
+
 io.on('connection', (socket) => {
-  console.log('A user connected:', socket.id);
+  console.log('🟢 [Socket] User connected:', socket.id);
 
   // Multi-user join logic
   socket.on('join-room', (roomId) => {
+    console.log(`🟢 [Socket] User ${socket.id} joining room: ${roomId}`);
+    
     socket.join(roomId);
+    
+    // Track users in room
+    if (!roomUsers.has(roomId)) {
+      roomUsers.set(roomId, new Set());
+    }
+    roomUsers.get(roomId).add(socket.id);
+    
     // Get all users in the room except the new user
     const usersInRoom = Array.from(io.sockets.adapter.rooms.get(roomId) || []).filter(id => id !== socket.id);
+    
+    console.log(`🟢 [Socket] Room ${roomId} users:`, usersInRoom);
+    console.log(`🟢 [Socket] Total users in room ${roomId}:`, roomUsers.get(roomId).size);
+    
     // Send the list to the new user
     socket.emit('all-users', usersInRoom);
+    console.log(`🟢 [Socket] Sent all-users to ${socket.id}:`, usersInRoom);
+    
     // Notify existing users about the new user
     socket.to(roomId).emit('user-joined', socket.id);
+    console.log(`🟢 [Socket] Notified room ${roomId} about new user: ${socket.id}`);
   });
 
   // Relay offer
   socket.on('offer', (data) => {
-    // data: { roomId, to, offer }
+    console.log(`🟢 [Signaling] Offer from ${socket.id} to ${data.to}`);
+    console.log(`🟢 [Signaling] Offer data:`, JSON.stringify(data.offer, null, 2));
     socket.to(data.to).emit('offer', { from: socket.id, offer: data.offer });
   });
 
   // Relay answer
   socket.on('answer', (data) => {
-    // data: { roomId, to, answer }
+    console.log(`🟢 [Signaling] Answer from ${socket.id} to ${data.to}`);
+    console.log(`🟢 [Signaling] Answer data:`, JSON.stringify(data.answer, null, 2));
     socket.to(data.to).emit('answer', { from: socket.id, answer: data.answer });
   });
 
   // Relay ICE candidates
   socket.on('ice-candidate', (data) => {
-    // data: { roomId, to, candidate }
+    console.log(`🟢 [Signaling] ICE candidate from ${socket.id} to ${data.to}`);
     socket.to(data.to).emit('ice-candidate', { from: socket.id, candidate: data.candidate });
   });
 
   socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
-    // Notify all rooms this user was in
-    for (const roomId of socket.rooms) {
-      if (roomId !== socket.id) {
+    console.log('🔴 [Socket] User disconnected:', socket.id);
+    
+    // Remove from all rooms
+    for (const [roomId, users] of roomUsers.entries()) {
+      if (users.has(socket.id)) {
+        users.delete(socket.id);
+        console.log(`🔴 [Socket] Removed ${socket.id} from room ${roomId}`);
+        
+        // Notify other users in the room
         socket.to(roomId).emit('user-left', socket.id);
+        console.log(`🔴 [Socket] Notified room ${roomId} that ${socket.id} left`);
+        
+        // Clean up empty rooms
+        if (users.size === 0) {
+          roomUsers.delete(roomId);
+          console.log(`🔴 [Socket] Removed empty room: ${roomId}`);
+        }
       }
     }
   });
