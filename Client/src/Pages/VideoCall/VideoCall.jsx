@@ -28,76 +28,128 @@ const VideoCall = () => {
   // Setup socket and join room
   useEffect(() => {
     if (joined && !socket) {
+      console.log('🟢 [Frontend] Creating socket connection to:', SIGNALING_SERVER_URL);
       const s = io(SIGNALING_SERVER_URL);
       setSocket(s);
+      
       s.on('connect', () => {
         setMyId(s.id);
-        setMessages(msgs => [...msgs, 'Connected to signaling server. My ID: ' + s.id]);
-        console.log('[Socket] Connected. My ID:', s.id);
+        setMessages(msgs => [...msgs, `🟢 Connected to signaling server. My ID: ${s.id}`]);
+        console.log('🟢 [Frontend] Socket connected. My ID:', s.id);
+        console.log('🟢 [Frontend] Joining room:', roomId);
         s.emit('join-room', roomId);
       });
+
+      s.on('connect_error', (error) => {
+        console.error('🔴 [Frontend] Socket connection error:', error);
+        setMessages(msgs => [...msgs, `🔴 Connection error: ${error.message}`]);
+      });
+
       s.on('all-users', async (users) => {
-        await startLocalStream(); // Ensure local stream is ready before connecting
-        setMessages(msgs => [...msgs, `Users in room: ${users.join(', ')}`]);
-        console.log('[Socket] all-users:', users);
+        console.log('🟢 [Frontend] Received all-users:', users);
+        setMessages(msgs => [...msgs, `🟢 Users in room: ${users.join(', ')}`]);
+        
+        // Ensure local stream is ready before connecting
+        await startLocalStream();
+        
+        // Only the new user (joining) initiates offers
         users.slice(0, MAX_PEERS).forEach(async (userId) => {
-          console.log('[Peer] Creating connection to existing user:', userId);
-          await createPeerConnection(userId, true, s);
+          console.log('🟢 [Frontend] Creating connection to existing user:', userId);
+          await createPeerConnection(userId, true, s); // initiator = true
         });
       });
+
       s.on('user-joined', async (userId) => {
-        await startLocalStream(); // Ensure local stream is ready before connecting
-        setMessages(msgs => [...msgs, `User joined: ${userId}`]);
-        console.log('[Socket] user-joined:', userId);
-        await createPeerConnection(userId, false, s);
+        console.log('🟢 [Frontend] User joined:', userId);
+        setMessages(msgs => [...msgs, `🟢 User joined: ${userId}`]);
+        
+        // Ensure local stream is ready before connecting
+        await startLocalStream();
+        
+        // Existing users create peer connection but do NOT initiate offer
+        await createPeerConnection(userId, false, s); // initiator = false
       });
+
       s.on('offer', async (data) => {
         const { from, offer } = data;
-        setMessages(msgs => [...msgs, `Received offer from ${from}`]);
-        console.log('[Signaling] Received offer from', from);
-        await createPeerConnection(from, false, s);
+        console.log('🟢 [Frontend] Received offer from', from);
+        setMessages(msgs => [...msgs, `🟢 Received offer from ${from}`]);
+        
+        await createPeerConnection(from, false, s); // initiator = false
         const pc = peerConnections.current[from];
         if (pc) {
-          await pc.setRemoteDescription(new window.RTCSessionDescription(offer));
-          const answer = await pc.createAnswer();
-          await pc.setLocalDescription(answer);
-          s.emit('answer', { roomId, to: from, answer });
-          console.log('[Signaling] Sent answer to', from);
+          try {
+            console.log('🟢 [Frontend] Setting remote description for', from);
+            await pc.setRemoteDescription(new window.RTCSessionDescription(offer));
+            console.log('🟢 [Frontend] Creating answer for', from);
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            console.log('🟢 [Frontend] Sending answer to', from);
+            s.emit('answer', { roomId, to: from, answer });
+          } catch (e) {
+            console.error('🔴 [Frontend] Error handling offer:', e);
+            setMessages(msgs => [...msgs, `🔴 Error handling offer from ${from}: ${e.message}`]);
+          }
+        } else {
+          console.error('🔴 [Frontend] No peer connection found for', from);
         }
       });
+
       s.on('answer', async (data) => {
         const { from, answer } = data;
-        setMessages(msgs => [...msgs, `Received answer from ${from}`]);
-        console.log('[Signaling] Received answer from', from);
+        console.log('🟢 [Frontend] Received answer from', from);
+        setMessages(msgs => [...msgs, `🟢 Received answer from ${from}`]);
+        
         const pc = peerConnections.current[from];
         if (pc) {
-          await pc.setRemoteDescription(new window.RTCSessionDescription(answer));
+          try {
+            console.log('🟢 [Frontend] Setting remote description (answer) for', from);
+            await pc.setRemoteDescription(new window.RTCSessionDescription(answer));
+          } catch (e) {
+            console.error('🔴 [Frontend] Error handling answer:', e);
+            setMessages(msgs => [...msgs, `🔴 Error handling answer from ${from}: ${e.message}`]);
+          }
+        } else {
+          console.error('🔴 [Frontend] No peer connection found for answer from', from);
         }
       });
+
       s.on('ice-candidate', async (data) => {
         const { from, candidate } = data;
-        setMessages(msgs => [...msgs, `Received ICE candidate from ${from}`]);
-        console.log('[Signaling] Received ICE candidate from', from);
+        console.log('🟢 [Frontend] Received ICE candidate from', from);
+        setMessages(msgs => [...msgs, `🟢 Received ICE candidate from ${from}`]);
+        
         const pc = peerConnections.current[from];
         if (pc) {
           try {
             await pc.addIceCandidate(new window.RTCIceCandidate(candidate));
+            console.log('🟢 [Frontend] Added ICE candidate for', from);
           } catch (e) {
-            setMessages(msgs => [...msgs, `Error adding ICE candidate from ${from}`]);
-            console.error('[Signaling] Error adding ICE candidate from', from, e);
+            console.error('🔴 [Frontend] Error adding ICE candidate from', from, e);
+            setMessages(msgs => [...msgs, `🔴 Error adding ICE candidate from ${from}: ${e.message}`]);
           }
+        } else {
+          console.error('🔴 [Frontend] No peer connection found for ICE candidate from', from);
         }
       });
+
       s.on('user-left', (userId) => {
-        setMessages(msgs => [...msgs, `User left: ${userId}`]);
-        console.log('[Socket] user-left:', userId);
+        console.log('🔴 [Frontend] User left:', userId);
+        setMessages(msgs => [...msgs, `🔴 User left: ${userId}`]);
+        
         if (peerConnections.current[userId]) {
           peerConnections.current[userId].close();
           delete peerConnections.current[userId];
+          console.log('🟢 [Frontend] Closed peer connection for', userId);
         }
         setRemoteStreams(streams => streams.filter(s => s.userId !== userId));
       });
+
       return () => {
+        console.log('🟢 [Frontend] Cleaning up socket connection');
+        // Clean up all peer connections on disconnect
+        Object.values(peerConnections.current).forEach(pc => pc.close());
+        peerConnections.current = {};
         s.disconnect();
       };
     }
@@ -106,6 +158,7 @@ const VideoCall = () => {
 
   // Attach remote streams to video elements
   useEffect(() => {
+    console.log('🟢 [Frontend] Remote streams updated:', remoteStreams.length);
     remoteStreams.forEach(({ userId, stream }) => {
       if (!remoteVideoRefs.current[userId]) {
         remoteVideoRefs.current[userId] = React.createRef();
@@ -113,75 +166,135 @@ const VideoCall = () => {
       const videoElem = remoteVideoRefs.current[userId].current;
       if (videoElem && videoElem.srcObject !== stream) {
         videoElem.srcObject = stream;
-        console.log('[Stream] Assigned remote stream to video element for user:', userId);
+        console.log('🟢 [Frontend] Assigned remote stream to video element for user:', userId);
       } else if (!videoElem) {
-        console.warn('[Stream] No video element found for user:', userId);
+        console.warn('🔴 [Frontend] No video element found for user:', userId);
       }
     });
   }, [remoteStreams]);
 
   // Start local media
   const startLocalStream = async () => {
-    if (localStream) return;
+    if (localStream) {
+      console.log('🟢 [Frontend] Local stream already exists');
+      return;
+    }
+    
+    console.log('🟢 [Frontend] Starting local stream...');
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       setLocalStream(stream);
       setMediaError('');
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
+        console.log('🟢 [Frontend] Local stream attached to video element');
       }
+      console.log('🟢 [Frontend] Local stream started successfully');
     } catch (err) {
+      console.error('🔴 [Frontend] Error starting local stream:', err);
       setMediaError('Could not access camera/mic. Please allow permissions in your browser and refresh the page.');
-      setMessages(msgs => [...msgs, 'Could not access camera/mic.']);
+      setMessages(msgs => [...msgs, '🔴 Could not access camera/mic.']);
+    }
+  };
+
+  // Helper: Add local tracks to a peer connection
+  const addLocalTracks = (pc) => {
+    if (localStream) {
+      localStream.getTracks().forEach(track => {
+        try {
+          pc.addTrack(track, localStream);
+          console.log('🟢 [Frontend] Added local track:', track.kind);
+        } catch (e) {
+          console.warn('🔴 [Frontend] Could not add track:', e);
+        }
+      });
+    } else {
+      console.warn('🔴 [Frontend] No localStream when trying to add tracks');
     }
   };
 
   // Create peer connection for a user
   const createPeerConnection = async (userId, initiator, s) => {
     if (peerConnections.current[userId]) {
-      console.log('[Peer] Connection already exists for', userId);
+      console.log('🟢 [Frontend] Connection already exists for', userId);
       return;
     }
+    
+    console.log('🟢 [Frontend] Creating new RTCPeerConnection for', userId, 'initiator:', initiator);
     const pc = new window.RTCPeerConnection({ iceServers: ICE_SERVERS });
     peerConnections.current[userId] = pc;
-    console.log('[Peer] Created new RTCPeerConnection for', userId, 'initiator:', initiator);
-    // Add local tracks
-    if (localStream) {
-      localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-      console.log('[Peer] Added local tracks to connection for', userId);
+    
+    // Always add local tracks (if available)
+    addLocalTracks(pc);
+    
+    // If localStream arrives later, add tracks then
+    if (!localStream) {
+      const interval = setInterval(() => {
+        if (localStream) {
+          addLocalTracks(pc);
+          clearInterval(interval);
+        }
+      }, 200);
     }
+    
     // Handle remote stream
     pc.ontrack = (event) => {
+      console.log('🟢 [Frontend] Received remote stream from', userId);
       setRemoteStreams(prev => {
-        if (prev.some(s => s.userId === userId)) return prev;
-        console.log('[Stream] Received remote stream from', userId);
+        if (prev.some(s => s.userId === userId)) {
+          console.log('🟢 [Frontend] Stream already exists for', userId);
+          return prev;
+        }
+        console.log('🟢 [Frontend] Adding new remote stream for', userId);
         return [...prev, { userId, stream: event.streams[0] }].slice(0, MAX_PEERS);
       });
     };
+    
     // ICE candidates
     pc.onicecandidate = (event) => {
       if (event.candidate) {
+        console.log('🟢 [Frontend] Sending ICE candidate to', userId);
         s.emit('ice-candidate', { roomId, to: userId, candidate: event.candidate });
-        console.log('[ICE] Sent ICE candidate to', userId);
       }
     };
+    
+    // Connection state changes
+    pc.onconnectionstatechange = () => {
+      console.log('🟢 [Frontend] Connection state for', userId, ':', pc.connectionState);
+      setMessages(msgs => [...msgs, `🟢 Connection state with ${userId}: ${pc.connectionState}`]);
+    };
+    
+    // ICE connection state changes
+    pc.oniceconnectionstatechange = () => {
+      console.log('🟢 [Frontend] ICE connection state for', userId, ':', pc.iceConnectionState);
+      setMessages(msgs => [...msgs, `🟢 ICE state with ${userId}: ${pc.iceConnectionState}`]);
+    };
+    
     // If initiator, create offer
     if (initiator) {
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      s.emit('offer', { roomId, to: userId, offer });
-      console.log('[Signaling] Sent offer to', userId);
+      try {
+        console.log('🟢 [Frontend] Creating offer for', userId);
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        console.log('🟢 [Frontend] Sending offer to', userId);
+        s.emit('offer', { roomId, to: userId, offer });
+      } catch (e) {
+        console.error('🔴 [Frontend] Failed to create/send offer:', e);
+        setMessages(msgs => [...msgs, `🔴 Failed to create offer for ${userId}: ${e.message}`]);
+      }
     }
   };
 
   const handleJoin = async () => {
     if (!roomId.trim()) return;
+    console.log('🟢 [Frontend] Joining room:', roomId);
     setJoined(true);
     await startLocalStream();
   };
 
   // End call cleanup
   const handleEndCall = () => {
+    console.log('🟢 [Frontend] Ending call...');
     if (peerConnections.current) {
       Object.values(peerConnections.current).forEach(pc => pc.close());
       peerConnections.current = {};
@@ -192,7 +305,7 @@ const VideoCall = () => {
     }
     if (localVideoRef.current) localVideoRef.current.srcObject = null;
     remoteVideoRefs.current = {};
-    setMessages(msgs => [...msgs, 'Call ended.']);
+    setMessages(msgs => [...msgs, '🟢 Call ended.']);
     setJoined(false);
     setSocket(null);
     setRemoteStreams([]);
@@ -225,7 +338,7 @@ const VideoCall = () => {
         setIsScreenSharing(false);
       };
     } catch (err) {
-      setMessages(msgs => [...msgs, 'Screen sharing failed.']);
+      setMessages(msgs => [...msgs, '🔴 Screen sharing failed.']);
     }
   };
 
@@ -266,13 +379,13 @@ const VideoCall = () => {
     };
     recorder.start();
     setIsRecording(true);
-    setMessages(msgs => [...msgs, 'Recording started.']);
+    setMessages(msgs => [...msgs, '🟢 Recording started.']);
   };
 
   const handleStopRecording = () => {
     if (mediaRecorder && isRecording) {
       mediaRecorder.stop();
-      setMessages(msgs => [...msgs, 'Recording stopped.']);
+      setMessages(msgs => [...msgs, '🟢 Recording stopped.']);
     }
   };
 
