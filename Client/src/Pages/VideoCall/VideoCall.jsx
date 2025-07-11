@@ -20,35 +20,121 @@ const VideoCall = () => {
   const [mediaRecorder, setMediaRecorder] = useState(null);
   const [recordedChunks, setRecordedChunks] = useState([]);
   const [isRecording, setIsRecording] = useState(false);
+  const [downloadUrl, setDownloadUrl] = useState(null);
   const [videoEnabled, setVideoEnabled] = useState(true);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [myId, setMyId] = useState(null);
   const [mediaError, setMediaError] = useState('');
   const [connectionStatus, setConnectionStatus] = useState('Not connected');
+  const [audioLevel, setAudioLevel] = useState(0);
 
   // Test socket connection
   const testSocketConnection = () => {
-    console.log('🟢 [Test] Testing socket connection...');
-    setMessages(msgs => [...msgs, '🟢 Testing socket connection...']);
+    console.log(' [Test] Testing socket connection...');
+    setMessages(msgs => [...msgs, ' Testing socket connection...']);
     
     const testSocket = io(SIGNALING_SERVER_URL);
     
     testSocket.on('connect', () => {
-      console.log('🟢 [Test] Socket test successful!');
-      setMessages(msgs => [...msgs, '🟢 Socket test successful!']);
+      console.log(' [Test] Socket test successful!');
+      setMessages(msgs => [...msgs, ' Socket test successful!']);
       testSocket.disconnect();
     });
     
     testSocket.on('connect_error', (error) => {
-      console.error('🔴 [Test] Socket test failed:', error);
-      setMessages(msgs => [...msgs, `🔴 Socket test failed: ${error.message}`]);
+      console.error(' [Test] Socket test failed:', error);
+      setMessages(msgs => [...msgs, ` Socket test failed: ${error.message}`]);
     });
+  };
+
+  // Test audio permissions and devices
+  const testAudioDevices = async () => {
+    console.log(' [Audio Test] Testing audio devices...');
+    setMessages(msgs => [...msgs, ' Testing audio devices...']);
+    
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const audioDevices = devices.filter(device => device.kind === 'audioinput');
+      console.log(' [Audio Test] Available audio devices:', audioDevices);
+      setMessages(msgs => [...msgs, ` Found ${audioDevices.length} audio devices`]);
+      
+      // Test audio permissions
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log(' [Audio Test] Audio permissions granted');
+      setMessages(msgs => [...msgs, ' Audio permissions granted']);
+      
+      // Check audio tracks
+      const audioTracks = stream.getAudioTracks();
+      console.log(' [Audio Test] Audio tracks:', audioTracks);
+      setMessages(msgs => [...msgs, ` Audio tracks: ${audioTracks.length}`]);
+      
+      // Stop the test stream
+      stream.getTracks().forEach(track => track.stop());
+      
+    } catch (error) {
+      console.error(' [Audio Test] Audio test failed:', error);
+      setMessages(msgs => [...msgs, ` Audio test failed: ${error.message}`]);
+    }
+  };
+
+  // --- Recording logic ---
+  const startRecording = () => {
+    if (!localStream) {
+      setMessages(msgs => [...msgs, ' Cannot record: Local stream not ready']);
+      return;
+    }
+    try {
+      const streamToRecord = localStream;
+      const recorder = new window.MediaRecorder(streamToRecord, { mimeType: 'video/webm; codecs=vp8,opus' });
+      setRecordedChunks([]);
+      recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          setRecordedChunks(prev => [...prev, event.data]);
+        }
+      };
+      recorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        setDownloadUrl(url);
+        setMessages(msgs => [...msgs, ' Recording stopped. Ready to download.']);
+      };
+      recorder.start();
+      setMediaRecorder(recorder);
+      setIsRecording(true);
+      setMessages(msgs => [...msgs, ' Recording started']);
+    } catch (err) {
+      setMessages(msgs => [...msgs, ` Error starting recording: ${err.message}`]);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorder) {
+      mediaRecorder.stop();
+      setIsRecording(false);
+      setMediaRecorder(null);
+    }
+  };
+
+  const downloadRecording = () => {
+    if (downloadUrl) {
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = downloadUrl;
+      a.download = `call-recording-${Date.now()}.webm`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(downloadUrl);
+      document.body.removeChild(a);
+      setDownloadUrl(null);
+      setRecordedChunks([]);
+      setMessages(msgs => [...msgs, ' Recording downloaded.']);
+    }
   };
 
   // Setup socket and join room
   useEffect(() => {
     if (joined && !socket) {
-      console.log('🟢 [Frontend] Creating socket connection to:', SIGNALING_SERVER_URL);
+      console.log(' [Frontend] Creating socket connection to:', SIGNALING_SERVER_URL);
       setConnectionStatus('Connecting to server...');
       const s = io(SIGNALING_SERVER_URL);
       setSocket(s);
@@ -91,8 +177,8 @@ const VideoCall = () => {
         // Ensure local stream is ready before connecting
         await startLocalStream();
         
-        // Existing users create peer connection but do NOT initiate offer
-        await createPeerConnection(userId, false, s); // initiator = false
+        // Existing users create peer connection and initiate offer
+        await createPeerConnection(userId, true, s); // initiator = true
       });
 
       s.on('offer', async (data) => {
@@ -193,13 +279,18 @@ const VideoCall = () => {
       if (videoElem && videoElem.srcObject !== stream) {
         videoElem.srcObject = stream;
         console.log('🟢 [Frontend] Assigned remote stream to video element for user:', userId);
+        
+        // Check audio tracks in remote stream
+        const audioTracks = stream.getAudioTracks();
+        console.log('🟢 [Frontend] Remote stream audio tracks for', userId, ':', audioTracks.length);
+        setMessages(msgs => [...msgs, `🟢 Remote audio tracks for ${userId}: ${audioTracks.length}`]);
       } else if (!videoElem) {
         console.warn('🔴 [Frontend] No video element found for user:', userId);
       }
     });
   }, [remoteStreams]);
 
-  // Start local media
+  // Start local media with better audio constraints
   const startLocalStream = async () => {
     if (localStream) {
       console.log('🟢 [Frontend] Local stream already exists');
@@ -208,14 +299,40 @@ const VideoCall = () => {
     
     console.log('🟢 [Frontend] Starting local stream...');
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      // Better audio constraints for VOIP
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: true, 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 48000,
+          channelCount: 1
+        }
+      });
+      
       setLocalStream(stream);
       setMediaError('');
+      
+      // Log audio track details
+      const audioTracks = stream.getAudioTracks();
+      console.log('🟢 [Frontend] Local audio tracks:', audioTracks.length);
+      audioTracks.forEach((track, index) => {
+        console.log(`🟢 [Frontend] Audio track ${index}:`, {
+          enabled: track.enabled,
+          muted: track.muted,
+          readyState: track.readyState,
+          id: track.id,
+          label: track.label
+        });
+      });
+      
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
         console.log('🟢 [Frontend] Local stream attached to video element');
       }
       console.log('🟢 [Frontend] Local stream started successfully');
+      setMessages(msgs => [...msgs, `🟢 Local stream started with ${audioTracks.length} audio tracks`]);
     } catch (err) {
       console.error('🔴 [Frontend] Error starting local stream:', err);
       setMediaError('Could not access camera/mic. Please allow permissions in your browser and refresh the page.');
@@ -223,13 +340,20 @@ const VideoCall = () => {
     }
   };
 
-  // Helper: Add local tracks to a peer connection
+  // Helper: Add local tracks to a peer connection with audio focus
   const addLocalTracks = (pc) => {
     if (localStream) {
-      localStream.getTracks().forEach(track => {
+      const tracks = localStream.getTracks();
+      console.log('🟢 [Frontend] Adding tracks to peer connection:', tracks.length);
+      
+      tracks.forEach((track, index) => {
         try {
           pc.addTrack(track, localStream);
-          console.log('🟢 [Frontend] Added local track:', track.kind);
+          console.log(`🟢 [Frontend] Added ${track.kind} track ${index}:`, {
+            enabled: track.enabled,
+            muted: track.muted,
+            readyState: track.readyState
+          });
         } catch (e) {
           console.warn('🔴 [Frontend] Could not add track:', e);
         }
@@ -247,7 +371,11 @@ const VideoCall = () => {
     }
     
     console.log('🟢 [Frontend] Creating new RTCPeerConnection for', userId, 'initiator:', initiator);
-    const pc = new window.RTCPeerConnection({ iceServers: ICE_SERVERS });
+    const pc = new window.RTCPeerConnection({ 
+      iceServers: ICE_SERVERS,
+      // Better audio configuration for VOIP
+      iceCandidatePoolSize: 10
+    });
     peerConnections.current[userId] = pc;
     
     // Always add local tracks (if available)
@@ -266,13 +394,26 @@ const VideoCall = () => {
     // Handle remote stream
     pc.ontrack = (event) => {
       console.log('🟢 [Frontend] Received remote stream from', userId);
+      const stream = event.streams[0];
+      
+      // Log audio track details for debugging
+      const audioTracks = stream.getAudioTracks();
+      console.log('🟢 [Frontend] Remote stream audio tracks for', userId, ':', audioTracks.length);
+      audioTracks.forEach((track, index) => {
+        console.log(`🟢 [Frontend] Remote audio track ${index} for ${userId}:`, {
+          enabled: track.enabled,
+          muted: track.muted,
+          readyState: track.readyState
+        });
+      });
+      
       setRemoteStreams(prev => {
         if (prev.some(s => s.userId === userId)) {
           console.log('🟢 [Frontend] Stream already exists for', userId);
           return prev;
         }
         console.log('🟢 [Frontend] Adding new remote stream for', userId);
-        return [...prev, { userId, stream: event.streams[0] }].slice(0, MAX_PEERS);
+        return [...prev, { userId, stream }].slice(0, MAX_PEERS);
       });
     };
     
@@ -426,13 +567,16 @@ const VideoCall = () => {
     }
   };
 
-  // Mute/Unmute Mic logic
+  // Mute/Unmute Mic logic with better feedback
   const handleToggleAudio = () => {
     if (localStream) {
-      localStream.getAudioTracks().forEach(track => {
+      const audioTracks = localStream.getAudioTracks();
+      audioTracks.forEach(track => {
         track.enabled = !audioEnabled;
+        console.log('🟢 [Frontend] Audio track enabled:', track.enabled);
       });
       setAudioEnabled(a => !a);
+      setMessages(msgs => [...msgs, `🟢 Audio ${!audioEnabled ? 'enabled' : 'disabled'}`]);
     }
   };
 
@@ -476,6 +620,9 @@ const VideoCall = () => {
           <button onClick={testSocketConnection} className="video-call-btn" style={{ background: '#ff9800' }}>
             Test Connection
           </button>
+          <button onClick={testAudioDevices} className="video-call-btn" style={{ background: '#9c27b0' }}>
+            Test Audio
+          </button>
         </div>
       ) : (
         <div>
@@ -487,7 +634,7 @@ const VideoCall = () => {
           <div className="video-call-videos">
             <div>
               <video ref={localVideoRef} autoPlay playsInline muted className="video-call-video" />
-              <div className="video-call-label">You</div>
+              <div className="video-call-label">You (Audio: {audioEnabled ? 'ON' : 'OFF'})</div>
             </div>
             {remoteStreams.map(({ userId }, idx) => {
               if (!remoteVideoRefs.current[userId]) {
@@ -536,4 +683,22 @@ const VideoCall = () => {
   );
 };
 
-export default VideoCall; 
+  // --- Recording controls UI ---
+  // Place these buttons near your main video UI in the render/return section
+
+  // Example (add inside your main return JSX):
+  // <div className="recording-controls">
+  //   {!isRecording && (
+  //     <button onClick={startRecording} disabled={!localStream}>Start Recording</button>
+  //   )}
+  //   {isRecording && (
+  //     <button onClick={stopRecording}>Stop Recording</button>
+  //   )}
+  //   {downloadUrl && (
+  //     <button onClick={downloadRecording}>Download Recording</button>
+  //   )}
+  //   {isRecording && <span style={{color: 'red'}}>● Recording...</span>}
+  // </div>
+
+export default VideoCall;
+ 
