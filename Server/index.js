@@ -16,19 +16,9 @@ const app = express();
 console.log("🟢 Server starting...");
 
 // ✅ Define allowed origins for CORS
-const allowedOrigins = [
-  "https://youtubeclone-yourtube.netlify.app",
-  "http://localhost:3000" // optional: for local testing
-];
-
+// TEMP: Allow all origins for debugging
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
+  origin: "*",
   credentials: true,
 }));
 
@@ -48,10 +38,13 @@ app.use('/group', groupRoutes);
 
 const server = http.createServer(app);
 
+// Use process.env.PORT for deployment compatibility
+const PORT = process.env.PORT || 5000;
+
 // Set up Socket.IO
 const io = new SocketIOServer(server, {
   cors: {
-    origin: allowedOrigins, // Use the same allowedOrigins array as Express
+    origin: "*", // TEMP: Allow all origins for debugging
     methods: ['GET', 'POST'],
     credentials: true
   }
