@@ -38,8 +38,6 @@ app.use('/group', groupRoutes);
 
 const server = http.createServer(app);
 
-// Use process.env.PORT for deployment compatibility
-const PORT = process.env.PORT || 5000;
 
 // Set up Socket.IO
 const io = new SocketIOServer(server, {
