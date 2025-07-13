@@ -33,7 +33,7 @@ function VideoCall() {
     axios.get(`https://youtube-clone-pd9i.onrender.com/stream/dev-token/${userId}?apiKey=${apiKey}`)
       .then(res => {
         const userToken = res.data.token;
-        const clientInstance = new StreamVideoClient({
+        const clientInstance = StreamVideoClient.getOrCreateInstance({
           apiKey,
           user: { id: userId },
           token: userToken,
@@ -46,6 +46,12 @@ function VideoCall() {
         setLoading(false);
       });
   }, [currentUser]);
+
+  useEffect(() => {
+    if (client && callId && joined && !call) {
+      setCall(client.call(callType, callId));
+    }
+  }, [client, callId, joined, call]);
 
   useEffect(() => {
     if (!call || !joined) return;
@@ -102,6 +108,9 @@ function VideoCall() {
             onClick={() => {
               setCallId(inputCallId.trim());
               setJoined(true);
+              if (client) {
+                setCall(client.call(callType, inputCallId.trim()));
+              }
             }}
           >
             Join Call
