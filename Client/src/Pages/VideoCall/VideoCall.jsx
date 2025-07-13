@@ -1,121 +1,503 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { io } from 'socket.io-client';
-import './VideoCall.css';
+import React, { useEffect } from 'react';
+import {
+  StreamVideoClient,
+  StreamCall,
+  StreamVideoProvider,
+  StreamTheme,
+  CallControls,
+  CallParticipantsList,
+} from '@stream-io/video-react-sdk';
+// import './VideoCall.css'; // Optional: keep if you want to style further
 
-const SIGNALING_SERVER_URL = 'https://youtube-clone-pd9i.onrender.com';
-const ICE_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }];
-const MAX_PEERS = 3; // 3 remote peers + self = 4
+import { getDevToken } from '@stream-io/video-react-sdk';
 
-const VideoCall = () => {
-  const localVideoRef = useRef(null);
-  const [remoteStreams, setRemoteStreams] = useState([]); // [{userId, stream}]
-  const remoteVideoRefs = useRef({}); // userId: ref
-  const [roomId, setRoomId] = useState('');
-  const [joined, setJoined] = useState(false);
-  const [socket, setSocket] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const peerConnections = useRef({}); // userId: RTCPeerConnection
-  const [localStream, setLocalStream] = useState(null);
-  const [isScreenSharing, setIsScreenSharing] = useState(false);
-  const [mediaRecorder, setMediaRecorder] = useState(null);
-  const [recordedChunks, setRecordedChunks] = useState([]);
-  const [isRecording, setIsRecording] = useState(false);
-  const [downloadUrl, setDownloadUrl] = useState(null);
-  const [videoEnabled, setVideoEnabled] = useState(true);
-  const [audioEnabled, setAudioEnabled] = useState(true);
-  const [myId, setMyId] = useState(null);
-  const [mediaError, setMediaError] = useState('');
-  const [connectionStatus, setConnectionStatus] = useState('Not connected');
-  const [audioLevel, setAudioLevel] = useState(0);
+const apiKey = 'aemwtenush72'; // Your Stream Video API key
+// Allow quick switching of userId for demo/testing (from localStorage, prompt, or fallback)
+const defaultUserId = 'user-' + Math.floor(Math.random() * 10000);
+const userId = window.localStorage.getItem('stream_user_id') || defaultUserId;
+const userToken = getDevToken(userId); // Dev token for local/dev only
+const callType = 'default';
+const callId = 'room-id-001'; // Use a unique value for each call/room
 
-  // Test socket connection
-  const testSocketConnection = () => {
-    console.log(' [Test] Testing socket connection...');
-    setMessages(msgs => [...msgs, ' Testing socket connection...']);
-    
-    const testSocket = io(SIGNALING_SERVER_URL);
-    
-    testSocket.on('connect', () => {
-      console.log(' [Test] Socket test successful!');
-      setMessages(msgs => [...msgs, ' Socket test successful!']);
-      testSocket.disconnect();
-    });
-    
-    testSocket.on('connect_error', (error) => {
-      console.error(' [Test] Socket test failed:', error);
-      setMessages(msgs => [...msgs, ` Socket test failed: ${error.message}`]);
-    });
-  };
+const client = new StreamVideoClient({
+  apiKey,
+  user: { id: userId },
+  token: userToken,
+});
 
-  // Test audio permissions and devices
-  const testAudioDevices = async () => {
-    console.log(' [Audio Test] Testing audio devices...');
-    setMessages(msgs => [...msgs, ' Testing audio devices...']);
-    
-    try {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const audioDevices = devices.filter(device => device.kind === 'audioinput');
-      console.log(' [Audio Test] Available audio devices:', audioDevices);
-      setMessages(msgs => [...msgs, ` Found ${audioDevices.length} audio devices`]);
-      
-      // Test audio permissions
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      console.log(' [Audio Test] Audio permissions granted');
-      setMessages(msgs => [...msgs, ' Audio permissions granted']);
-      
-      // Check audio tracks
-      const audioTracks = stream.getAudioTracks();
-      console.log(' [Audio Test] Audio tracks:', audioTracks);
-      setMessages(msgs => [...msgs, ` Audio tracks: ${audioTracks.length}`]);
-      
-      // Stop the test stream
-      stream.getTracks().forEach(track => track.stop());
-      
-    } catch (error) {
-      console.error(' [Audio Test] Audio test failed:', error);
-      setMessages(msgs => [...msgs, ` Audio test failed: ${error.message}`]);
-    }
-  };
+function VideoCall() {
+  const call = client.call(callType, callId);
 
-  // --- Recording logic ---
-  const startRecording = () => {
-    if (!localStream) {
-      setMessages(msgs => [...msgs, ' Cannot record: Local stream not ready']);
+  useEffect(() => {
+    call.join();
+    return () => call.leave();
+  }, [call]);
+
+  return (
+    <StreamVideoProvider client={client}>
+      <StreamTheme>
+        <StreamCall call={call}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100vh', background: '#18181b' }}>
+            <h2 style={{ color: '#fff', margin: '24px 0' }}>Group Video Call</h2>
+            <div style={{ flex: 1, width: '100%', maxWidth: 900 }}>
+              <CallParticipantsList />
+            </div>
+            <div style={{ marginBottom: 32 }}>
+              <CallControls />
+            </div>
+          </div>
+        </StreamCall>
+      </StreamTheme>
+    </StreamVideoProvider>
+  );
+}
+
+  // Media stream management
+  const startLocalStream = useCallback(async () => {
+    if (localStream) {
+      logDebug('Local stream already exists');
       return;
     }
+    
+    logDebug('Starting local stream...');
+    setMediaError('');
+    
     try {
-      const streamToRecord = localStream;
-      const recorder = new window.MediaRecorder(streamToRecord, { mimeType: 'video/webm; codecs=vp8,opus' });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 30 }
+        }, 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 48000,
+          channelCount: 1
+        }
+      });
+      
+      setLocalStream(stream);
+      
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+      }
+      
+      startAudioLevelMonitoring();
+      addMessage('Local stream started successfully', 'success');
+      logDebug('Local stream started successfully');
+      
+    } catch (err) {
+      const errorMessage = 'Could not access camera/mic. Please allow permissions and refresh.';
+      setMediaError(errorMessage);
+      addMessage(errorMessage, 'error');
+      logDebug('Error starting local stream:', err);
+    }
+  }, [localStream, addMessage, logDebug, startAudioLevelMonitoring]);
+
+  const stopLocalStream = useCallback(() => {
+    if (localStream) {
+      localStream.getTracks().forEach(track => track.stop());
+      setLocalStream(null);
+    }
+    stopAudioLevelMonitoring();
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = null;
+    }
+  }, [localStream, stopAudioLevelMonitoring]);
+
+  // Peer connection management
+  const createPeerConnection = useCallback(async (userId, initiator, socket) => {
+    if (peerConnections.current[userId]) {
+      logDebug('Connection already exists for', userId);
+      return;
+    }
+    
+    logDebug('Creating new RTCPeerConnection for', userId, 'initiator:', initiator);
+    
+    const pc = new window.RTCPeerConnection({ 
+      iceServers: ICE_SERVERS,
+      iceCandidatePoolSize: 10
+    });
+    peerConnections.current[userId] = pc;
+    
+    // Add local tracks if available
+    if (localStream) {
+      localStream.getTracks().forEach(track => {
+        pc.addTrack(track, localStream);
+        logDebug(`Added ${track.kind} track to peer connection`);
+      });
+    }
+    
+    // Handle remote stream
+    pc.ontrack = (event) => {
+      logDebug('Received remote stream from', userId);
+      const stream = event.streams[0];
+      
+      setRemoteStreams(prev => {
+        if (prev.some(s => s.userId === userId)) {
+          return prev;
+        }
+        return [...prev, { userId, stream }].slice(0, MAX_PEERS);
+      });
+      
+      addMessage(`Connected to ${userId}`, 'success');
+    };
+    
+    // ICE candidates
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        socket.emit('ice-candidate', { roomId, to: userId, candidate: event.candidate });
+        logDebug('Sent ICE candidate to', userId);
+      }
+    };
+    
+    // Connection state monitoring
+    pc.onconnectionstatechange = () => {
+      logDebug('Connection state for', userId, ':', pc.connectionState);
+      addMessage(`Connection with ${userId}: ${pc.connectionState}`);
+    };
+    
+    pc.oniceconnectionstatechange = () => {
+      logDebug('ICE connection state for', userId, ':', pc.iceConnectionState);
+      addMessage(`ICE state with ${userId}: ${pc.iceConnectionState}`);
+    };
+    
+    // Create offer if initiator
+    if (initiator) {
+      try {
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        socket.emit('offer', { roomId, to: userId, offer });
+        logDebug('Sent offer to', userId);
+      } catch (e) {
+        addMessage(`Failed to create offer for ${userId}: ${e.message}`, 'error');
+        logDebug('Failed to create/send offer:', e);
+      }
+    }
+  }, [localStream, roomId, addMessage, logDebug]);
+
+  // Socket event handlers
+  const setupSocketHandlers = useCallback((socket) => {
+    socket.on('connect', () => {
+      setMyId(socket.id);
+      setConnectionStatus('Connected to server');
+      addMessage(`Connected to signaling server. My ID: ${socket.id}`, 'success');
+      logDebug('Socket connected. My ID:', socket.id);
+      socket.emit('join-room', roomId);
+    });
+
+    socket.on('connect_error', (error) => {
+      setConnectionStatus('Connection failed');
+      addMessage(`Connection error: ${error.message}`, 'error');
+      logDebug('Socket connection error:', error);
+    });
+
+    socket.on('all-users', async (users) => {
+      logDebug('Received all-users:', users);
+      addMessage(`Users in room: ${users.join(', ')}`, 'success');
+      setConnectionStatus(`Connected - ${users.length} other users in room`);
+      
+      await startLocalStream();
+      
+      users.slice(0, MAX_PEERS).forEach(async (userId) => {
+        await createPeerConnection(userId, true, socket);
+      });
+    });
+
+    socket.on('user-joined', async (userId) => {
+      logDebug('User joined:', userId);
+      addMessage(`User joined: ${userId}`, 'success');
+      setConnectionStatus(`Connected - New user joined: ${userId}`);
+      
+      await startLocalStream();
+      await createPeerConnection(userId, false, socket);
+    });
+
+    socket.on('offer', async (data) => {
+      const { from, offer } = data;
+      logDebug('Received offer from', from);
+      addMessage(`Received offer from ${from}`, 'success');
+      
+      await createPeerConnection(from, false, socket);
+      const pc = peerConnections.current[from];
+      
+      if (pc) {
+        try {
+          await pc.setRemoteDescription(new window.RTCSessionDescription(offer));
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          socket.emit('answer', { roomId, to: from, answer });
+          logDebug('Sent answer to', from);
+        } catch (e) {
+          addMessage(`Error handling offer from ${from}: ${e.message}`, 'error');
+          logDebug('Error handling offer:', e);
+        }
+      }
+    });
+
+    socket.on('answer', async (data) => {
+      const { from, answer } = data;
+      logDebug('Received answer from', from);
+      addMessage(`Received answer from ${from}`, 'success');
+      
+      const pc = peerConnections.current[from];
+      if (pc) {
+        try {
+          await pc.setRemoteDescription(new window.RTCSessionDescription(answer));
+        } catch (e) {
+          addMessage(`Error handling answer from ${from}: ${e.message}`, 'error');
+          logDebug('Error handling answer:', e);
+        }
+      }
+    });
+
+    socket.on('ice-candidate', async (data) => {
+      const { from, candidate } = data;
+      logDebug('Received ICE candidate from', from);
+      addMessage(`Received ICE candidate from ${from}`, 'success');
+      
+      const pc = peerConnections.current[from];
+      if (pc) {
+        try {
+          await pc.addIceCandidate(new window.RTCIceCandidate(candidate));
+        } catch (e) {
+          addMessage(`Error adding ICE candidate from ${from}: ${e.message}`, 'error');
+          logDebug('Error adding ICE candidate:', e);
+        }
+      }
+    });
+
+    socket.on('user-left', (userId) => {
+      logDebug('User left:', userId);
+      addMessage(`User left: ${userId}`, 'error');
+      setConnectionStatus(`Connected - User left: ${userId}`);
+      
+      if (peerConnections.current[userId]) {
+        peerConnections.current[userId].close();
+        delete peerConnections.current[userId];
+      }
+      setRemoteStreams(streams => streams.filter(s => s.userId !== userId));
+    });
+  }, [roomId, startLocalStream, createPeerConnection, addMessage, logDebug]);
+
+  // Socket connection setup
+  useEffect(() => {
+    if (joined && !socket) {
+      logDebug('Creating socket connection to:', SIGNALING_SERVER_URL);
+      setConnectionStatus('Connecting to server...');
+      
+      const newSocket = io(SIGNALING_SERVER_URL);
+      setSocket(newSocket);
+      setupSocketHandlers(newSocket);
+      
+      return () => {
+        logDebug('Cleaning up socket connection');
+        Object.values(peerConnections.current).forEach(pc => pc.close());
+        peerConnections.current = {};
+        newSocket.disconnect();
+      };
+    }
+  }, [joined, socket, setupSocketHandlers, logDebug]);
+
+  // Attach remote streams to video elements
+  useEffect(() => {
+    remoteStreams.forEach(({ userId, stream }) => {
+      if (!remoteVideoRefs.current[userId]) {
+        remoteVideoRefs.current[userId] = React.createRef();
+      }
+      
+      const videoElem = remoteVideoRefs.current[userId].current;
+      if (videoElem && videoElem.srcObject !== stream) {
+        videoElem.srcObject = stream;
+        logDebug('Assigned remote stream to video element for user:', userId);
+      }
+    });
+  }, [remoteStreams, logDebug]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopLocalStream();
+      stopAudioLevelMonitoring();
+      if (socket) {
+        socket.disconnect();
+      }
+    };
+  }, [stopLocalStream, stopAudioLevelMonitoring, socket]);
+
+  // Event handlers
+  const handleJoin = useCallback(async () => {
+    if (!roomId.trim()) {
+      addMessage('Please enter a room ID', 'error');
+      return;
+    }
+    
+    logDebug('Joining room:', roomId);
+    setJoined(true);
+    await startLocalStream();
+  }, [roomId, startLocalStream, addMessage, logDebug]);
+
+  const handleEndCall = useCallback(() => {
+    logDebug('Ending call...');
+    
+    // Stop recording if active
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+    }
+    
+    // Close peer connections
+    Object.values(peerConnections.current).forEach(pc => pc.close());
+    peerConnections.current = {};
+    
+    // Stop local stream
+    stopLocalStream();
+    
+    // Reset state
+    setJoined(false);
+    setSocket(null);
+    setRemoteStreams([]);
+    setConnectionStatus('Not connected');
+    setMessages([]);
+    setMediaError('');
+    setIsScreenSharing(false);
+    setIsRecording(false);
+    setRecordedChunks([]);
+    setDownloadUrl(null);
+    
+    addMessage('Call ended', 'success');
+  }, [stopLocalStream, addMessage, logDebug, isRecording]);
+
+  const handleToggleVideo = useCallback(() => {
+    if (localStream) {
+      localStream.getVideoTracks().forEach(track => {
+        track.enabled = !videoEnabled;
+      });
+      setVideoEnabled(v => !v);
+      addMessage(`Video ${!videoEnabled ? 'enabled' : 'disabled'}`, 'success');
+    }
+  }, [localStream, videoEnabled, addMessage]);
+
+  const handleToggleAudio = useCallback(() => {
+    if (localStream) {
+      localStream.getAudioTracks().forEach(track => {
+        track.enabled = !audioEnabled;
+      });
+      setAudioEnabled(a => !a);
+      addMessage(`Audio ${!audioEnabled ? 'enabled' : 'disabled'}`, 'success');
+    }
+  }, [localStream, audioEnabled, addMessage]);
+
+  const handleShareScreen = useCallback(async () => {
+    if (!Object.keys(peerConnections.current).length) {
+      addMessage('No connections to share screen with', 'error');
+      return;
+    }
+    
+    try {
+      const screenStream = await navigator.mediaDevices.getDisplayMedia({ 
+        video: { 
+          cursor: 'always',
+          displaySurface: 'monitor'
+        } 
+      });
+      
+      const screenTrack = screenStream.getVideoTracks()[0];
+      
+      // Replace video track in all peer connections
+      Object.values(peerConnections.current).forEach(pc => {
+        const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
+        if (sender) sender.replaceTrack(screenTrack);
+      });
+      
+      // Show screen in local video
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = screenStream;
+      }
+      
+      setIsScreenSharing(true);
+      addMessage('Screen sharing started', 'success');
+      
+      // Handle screen sharing stop
+      screenTrack.onended = () => {
+        if (localStream) {
+          const camTrack = localStream.getVideoTracks()[0];
+          Object.values(peerConnections.current).forEach(pc => {
+            const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
+            if (sender && camTrack) sender.replaceTrack(camTrack);
+          });
+          if (localVideoRef.current) {
+            localVideoRef.current.srcObject = localStream;
+          }
+        }
+        setIsScreenSharing(false);
+        addMessage('Screen sharing stopped', 'success');
+      };
+      
+    } catch (err) {
+      addMessage('Screen sharing failed', 'error');
+      logDebug('Screen sharing error:', err);
+    }
+  }, [localStream, addMessage, logDebug]);
+
+  const handleStartRecording = useCallback(() => {
+    if (!localStream && !remoteStreams.length) {
+      addMessage('No streams to record', 'error');
+      return;
+    }
+    
+    try {
+      const streamToRecord = new window.MediaStream();
+      
+      // Add local stream tracks
+      if (localStream) {
+        localStream.getTracks().forEach(track => streamToRecord.addTrack(track));
+      }
+      
+      // Add remote stream tracks
+      remoteStreams.forEach(({ stream }) => {
+        stream.getTracks().forEach(track => streamToRecord.addTrack(track));
+      });
+      
+      const recorder = new window.MediaRecorder(streamToRecord, { 
+        mimeType: 'video/webm; codecs=vp8,opus' 
+      });
+      
       setRecordedChunks([]);
+      
       recorder.ondataavailable = (event) => {
         if (event.data && event.data.size > 0) {
           setRecordedChunks(prev => [...prev, event.data]);
         }
       };
+      
       recorder.onstop = () => {
         const blob = new Blob(recordedChunks, { type: 'video/webm' });
         const url = URL.createObjectURL(blob);
         setDownloadUrl(url);
-        setMessages(msgs => [...msgs, ' Recording stopped. Ready to download.']);
+        setIsRecording(false);
+        addMessage('Recording stopped. Ready to download.', 'success');
       };
+      
       recorder.start();
-      setMediaRecorder(recorder);
+      mediaRecorderRef.current = recorder;
       setIsRecording(true);
-      setMessages(msgs => [...msgs, ' Recording started']);
+      addMessage('Recording started', 'success');
+      
     } catch (err) {
-      setMessages(msgs => [...msgs, ` Error starting recording: ${err.message}`]);
+      addMessage(`Error starting recording: ${err.message}`, 'error');
+      logDebug('Recording error:', err);
     }
-  };
+  }, [localStream, remoteStreams, recordedChunks, addMessage, logDebug]);
 
-  const stopRecording = () => {
-    if (mediaRecorder) {
-      mediaRecorder.stop();
-      setIsRecording(false);
-      setMediaRecorder(null);
+  const handleStopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
     }
-  };
+  }, [isRecording]);
 
-  const downloadRecording = () => {
+  const handleDownloadRecording = useCallback(() => {
     if (downloadUrl) {
       const a = document.createElement('a');
       a.style.display = 'none';
@@ -127,458 +509,46 @@ const VideoCall = () => {
       document.body.removeChild(a);
       setDownloadUrl(null);
       setRecordedChunks([]);
-      setMessages(msgs => [...msgs, ' Recording downloaded.']);
+      addMessage('Recording downloaded', 'success');
     }
-  };
+  }, [downloadUrl, addMessage]);
 
-  // Setup socket and join room
-  useEffect(() => {
-    if (joined && !socket) {
-      console.log(' [Frontend] Creating socket connection to:', SIGNALING_SERVER_URL);
-      setConnectionStatus('Connecting to server...');
-      const s = io(SIGNALING_SERVER_URL);
-      setSocket(s);
-      
-      s.on('connect', () => {
-        setMyId(s.id);
-        setConnectionStatus('Connected to server');
-        setMessages(msgs => [...msgs, `🟢 Connected to signaling server. My ID: ${s.id}`]);
-        console.log('🟢 [Frontend] Socket connected. My ID:', s.id);
-        console.log('🟢 [Frontend] Joining room:', roomId);
-        s.emit('join-room', roomId);
-      });
-
-      s.on('connect_error', (error) => {
-        console.error('🔴 [Frontend] Socket connection error:', error);
-        setConnectionStatus('Connection failed');
-        setMessages(msgs => [...msgs, `🔴 Connection error: ${error.message}`]);
-      });
-
-      s.on('all-users', async (users) => {
-        console.log('🟢 [Frontend] Received all-users:', users);
-        setMessages(msgs => [...msgs, `🟢 Users in room: ${users.join(', ')}`]);
-        setConnectionStatus(`Connected - ${users.length} other users in room`);
-        
-        // Ensure local stream is ready before connecting
-        await startLocalStream();
-        
-        // Only the new user (joining) initiates offers
-        users.slice(0, MAX_PEERS).forEach(async (userId) => {
-          console.log('🟢 [Frontend] Creating connection to existing user:', userId);
-          await createPeerConnection(userId, true, s); // initiator = true
-        });
-      });
-
-      s.on('user-joined', async (userId) => {
-        console.log('🟢 [Frontend] User joined:', userId);
-        setMessages(msgs => [...msgs, `🟢 User joined: ${userId}`]);
-        setConnectionStatus(`Connected - New user joined: ${userId}`);
-        
-        // Ensure local stream is ready before connecting
-        await startLocalStream();
-        
-        // Existing users create peer connection and initiate offer
-        await createPeerConnection(userId, true, s); // initiator = true
-      });
-
-      s.on('offer', async (data) => {
-        const { from, offer } = data;
-        console.log('🟢 [Frontend] Received offer from', from);
-        setMessages(msgs => [...msgs, `🟢 Received offer from ${from}`]);
-        
-        await createPeerConnection(from, false, s); // initiator = false
-        const pc = peerConnections.current[from];
-        if (pc) {
-          try {
-            console.log('🟢 [Frontend] Setting remote description for', from);
-            await pc.setRemoteDescription(new window.RTCSessionDescription(offer));
-            console.log('🟢 [Frontend] Creating answer for', from);
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-            console.log('🟢 [Frontend] Sending answer to', from);
-            s.emit('answer', { roomId, to: from, answer });
-          } catch (e) {
-            console.error('🔴 [Frontend] Error handling offer:', e);
-            setMessages(msgs => [...msgs, `🔴 Error handling offer from ${from}: ${e.message}`]);
-          }
-        } else {
-          console.error('🔴 [Frontend] No peer connection found for', from);
-        }
-      });
-
-      s.on('answer', async (data) => {
-        const { from, answer } = data;
-        console.log('🟢 [Frontend] Received answer from', from);
-        setMessages(msgs => [...msgs, `🟢 Received answer from ${from}`]);
-        
-        const pc = peerConnections.current[from];
-        if (pc) {
-          try {
-            console.log('🟢 [Frontend] Setting remote description (answer) for', from);
-            await pc.setRemoteDescription(new window.RTCSessionDescription(answer));
-          } catch (e) {
-            console.error('🔴 [Frontend] Error handling answer:', e);
-            setMessages(msgs => [...msgs, `🔴 Error handling answer from ${from}: ${e.message}`]);
-          }
-        } else {
-          console.error('🔴 [Frontend] No peer connection found for answer from', from);
-        }
-      });
-
-      s.on('ice-candidate', async (data) => {
-        const { from, candidate } = data;
-        console.log('🟢 [Frontend] Received ICE candidate from', from);
-        setMessages(msgs => [...msgs, `🟢 Received ICE candidate from ${from}`]);
-        
-        const pc = peerConnections.current[from];
-        if (pc) {
-          try {
-            await pc.addIceCandidate(new window.RTCIceCandidate(candidate));
-            console.log('🟢 [Frontend] Added ICE candidate for', from);
-          } catch (e) {
-            console.error('🔴 [Frontend] Error adding ICE candidate from', from, e);
-            setMessages(msgs => [...msgs, `🔴 Error adding ICE candidate from ${from}: ${e.message}`]);
-          }
-        } else {
-          console.error('🔴 [Frontend] No peer connection found for ICE candidate from', from);
-        }
-      });
-
-      s.on('user-left', (userId) => {
-        console.log('🔴 [Frontend] User left:', userId);
-        setMessages(msgs => [...msgs, `🔴 User left: ${userId}`]);
-        setConnectionStatus(`Connected - User left: ${userId}`);
-        
-        if (peerConnections.current[userId]) {
-          peerConnections.current[userId].close();
-          delete peerConnections.current[userId];
-          console.log('🟢 [Frontend] Closed peer connection for', userId);
-        }
-        setRemoteStreams(streams => streams.filter(s => s.userId !== userId));
-      });
-
-      return () => {
-        console.log('🟢 [Frontend] Cleaning up socket connection');
-        // Clean up all peer connections on disconnect
-        Object.values(peerConnections.current).forEach(pc => pc.close());
-        peerConnections.current = {};
-        s.disconnect();
-      };
-    }
-    // eslint-disable-next-line
-  }, [joined, roomId, socket]);
-
-  // Attach remote streams to video elements
-  useEffect(() => {
-    console.log('🟢 [Frontend] Remote streams updated:', remoteStreams.length);
-    remoteStreams.forEach(({ userId, stream }) => {
-      if (!remoteVideoRefs.current[userId]) {
-        remoteVideoRefs.current[userId] = React.createRef();
-      }
-      const videoElem = remoteVideoRefs.current[userId].current;
-      if (videoElem && videoElem.srcObject !== stream) {
-        videoElem.srcObject = stream;
-        console.log('🟢 [Frontend] Assigned remote stream to video element for user:', userId);
-        
-        // Check audio tracks in remote stream
-        const audioTracks = stream.getAudioTracks();
-        console.log('🟢 [Frontend] Remote stream audio tracks for', userId, ':', audioTracks.length);
-        setMessages(msgs => [...msgs, `🟢 Remote audio tracks for ${userId}: ${audioTracks.length}`]);
-      } else if (!videoElem) {
-        console.warn('🔴 [Frontend] No video element found for user:', userId);
-      }
+  // Test functions
+  const testSocketConnection = useCallback(() => {
+    addMessage('Testing socket connection...', 'info');
+    
+    const testSocket = io(SIGNALING_SERVER_URL);
+    
+    testSocket.on('connect', () => {
+      addMessage('Socket test successful!', 'success');
+      testSocket.disconnect();
     });
-  }, [remoteStreams]);
-
-  // Start local media with better audio constraints
-  const startLocalStream = async () => {
-    if (localStream) {
-      console.log('🟢 [Frontend] Local stream already exists');
-      return;
-    }
     
-    console.log('🟢 [Frontend] Starting local stream...');
-    try {
-      // Better audio constraints for VOIP
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: true, 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          sampleRate: 48000,
-          channelCount: 1
-        }
-      });
-      
-      setLocalStream(stream);
-      setMediaError('');
-      
-      // Log audio track details
-      const audioTracks = stream.getAudioTracks();
-      console.log('🟢 [Frontend] Local audio tracks:', audioTracks.length);
-      audioTracks.forEach((track, index) => {
-        console.log(`🟢 [Frontend] Audio track ${index}:`, {
-          enabled: track.enabled,
-          muted: track.muted,
-          readyState: track.readyState,
-          id: track.id,
-          label: track.label
-        });
-      });
-      
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
-        console.log('🟢 [Frontend] Local stream attached to video element');
-      }
-      console.log('🟢 [Frontend] Local stream started successfully');
-      setMessages(msgs => [...msgs, `🟢 Local stream started with ${audioTracks.length} audio tracks`]);
-    } catch (err) {
-      console.error('🔴 [Frontend] Error starting local stream:', err);
-      setMediaError('Could not access camera/mic. Please allow permissions in your browser and refresh the page.');
-      setMessages(msgs => [...msgs, '🔴 Could not access camera/mic.']);
-    }
-  };
-
-  // Helper: Add local tracks to a peer connection with audio focus
-  const addLocalTracks = (pc) => {
-    if (localStream) {
-      const tracks = localStream.getTracks();
-      console.log('🟢 [Frontend] Adding tracks to peer connection:', tracks.length);
-      
-      tracks.forEach((track, index) => {
-        try {
-          pc.addTrack(track, localStream);
-          console.log(`🟢 [Frontend] Added ${track.kind} track ${index}:`, {
-            enabled: track.enabled,
-            muted: track.muted,
-            readyState: track.readyState
-          });
-        } catch (e) {
-          console.warn('🔴 [Frontend] Could not add track:', e);
-        }
-      });
-    } else {
-      console.warn('🔴 [Frontend] No localStream when trying to add tracks');
-    }
-  };
-
-  // Create peer connection for a user
-  const createPeerConnection = async (userId, initiator, s) => {
-    if (peerConnections.current[userId]) {
-      console.log('🟢 [Frontend] Connection already exists for', userId);
-      return;
-    }
-    
-    console.log('🟢 [Frontend] Creating new RTCPeerConnection for', userId, 'initiator:', initiator);
-    const pc = new window.RTCPeerConnection({ 
-      iceServers: ICE_SERVERS,
-      // Better audio configuration for VOIP
-      iceCandidatePoolSize: 10
+    testSocket.on('connect_error', (error) => {
+      addMessage(`Socket test failed: ${error.message}`, 'error');
     });
-    peerConnections.current[userId] = pc;
-    
-    // Always add local tracks (if available)
-    addLocalTracks(pc);
-    
-    // If localStream arrives later, add tracks then
-    if (!localStream) {
-      const interval = setInterval(() => {
-        if (localStream) {
-          addLocalTracks(pc);
-          clearInterval(interval);
-        }
-      }, 200);
-    }
-    
-    // Handle remote stream
-    pc.ontrack = (event) => {
-      console.log('🟢 [Frontend] Received remote stream from', userId);
-      const stream = event.streams[0];
-      
-      // Log audio track details for debugging
-      const audioTracks = stream.getAudioTracks();
-      console.log('🟢 [Frontend] Remote stream audio tracks for', userId, ':', audioTracks.length);
-      audioTracks.forEach((track, index) => {
-        console.log(`🟢 [Frontend] Remote audio track ${index} for ${userId}:`, {
-          enabled: track.enabled,
-          muted: track.muted,
-          readyState: track.readyState
-        });
-      });
-      
-      setRemoteStreams(prev => {
-        if (prev.some(s => s.userId === userId)) {
-          console.log('🟢 [Frontend] Stream already exists for', userId);
-          return prev;
-        }
-        console.log('🟢 [Frontend] Adding new remote stream for', userId);
-        return [...prev, { userId, stream }].slice(0, MAX_PEERS);
-      });
-    };
-    
-    // ICE candidates
-    pc.onicecandidate = (event) => {
-      if (event.candidate) {
-        console.log('🟢 [Frontend] Sending ICE candidate to', userId);
-        s.emit('ice-candidate', { roomId, to: userId, candidate: event.candidate });
-      }
-    };
-    
-    // Connection state changes
-    pc.onconnectionstatechange = () => {
-      console.log('🟢 [Frontend] Connection state for', userId, ':', pc.connectionState);
-      setMessages(msgs => [...msgs, `🟢 Connection state with ${userId}: ${pc.connectionState}`]);
-    };
-    
-    // ICE connection state changes
-    pc.oniceconnectionstatechange = () => {
-      console.log('🟢 [Frontend] ICE connection state for', userId, ':', pc.iceConnectionState);
-      setMessages(msgs => [...msgs, `🟢 ICE state with ${userId}: ${pc.iceConnectionState}`]);
-    };
-    
-    // If initiator, create offer
-    if (initiator) {
-      try {
-        console.log('🟢 [Frontend] Creating offer for', userId);
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        console.log('🟢 [Frontend] Sending offer to', userId);
-        s.emit('offer', { roomId, to: userId, offer });
-      } catch (e) {
-        console.error('🔴 [Frontend] Failed to create/send offer:', e);
-        setMessages(msgs => [...msgs, `🔴 Failed to create offer for ${userId}: ${e.message}`]);
-      }
-    }
-  };
+  }, [addMessage]);
 
-  const handleJoin = async () => {
-    if (!roomId.trim()) return;
-    console.log('🟢 [Frontend] Joining room:', roomId);
-    setJoined(true);
-    await startLocalStream();
-  };
-
-  // End call cleanup
-  const handleEndCall = () => {
-    console.log('🟢 [Frontend] Ending call...');
-    if (peerConnections.current) {
-      Object.values(peerConnections.current).forEach(pc => pc.close());
-      peerConnections.current = {};
-    }
-    if (localStream) {
-      localStream.getTracks().forEach(track => track.stop());
-      setLocalStream(null);
-    }
-    if (localVideoRef.current) localVideoRef.current.srcObject = null;
-    remoteVideoRefs.current = {};
-    setMessages(msgs => [...msgs, '🟢 Call ended.']);
-    setJoined(false);
-    setSocket(null);
-    setRemoteStreams([]);
-    setConnectionStatus('Not connected');
-  };
-
-  // Screen sharing logic
-  const handleShareScreen = async () => {
-    if (!peerConnections.current) return;
+  const testAudioDevices = useCallback(async () => {
+    addMessage('Testing audio devices...', 'info');
+    
     try {
-      const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-      const screenTrack = screenStream.getVideoTracks()[0];
-      // Replace video track in all peer connections
-      Object.values(peerConnections.current).forEach(pc => {
-        const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
-        if (sender) sender.replaceTrack(screenTrack);
-      });
-      // Show screen in local video
-      if (localVideoRef.current) localVideoRef.current.srcObject = screenStream;
-      setIsScreenSharing(true);
-      // When user stops sharing
-      screenTrack.onended = () => {
-        if (localStream) {
-          const camTrack = localStream.getVideoTracks()[0];
-          Object.values(peerConnections.current).forEach(pc => {
-            const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
-            if (sender && camTrack) sender.replaceTrack(camTrack);
-          });
-          if (localVideoRef.current) localVideoRef.current.srcObject = localStream;
-        }
-        setIsScreenSharing(false);
-      };
-    } catch (err) {
-      setMessages(msgs => [...msgs, '🔴 Screen sharing failed.']);
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const audioDevices = devices.filter(device => device.kind === 'audioinput');
+      addMessage(`Found ${audioDevices.length} audio devices`, 'success');
+      
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      addMessage('Audio permissions granted', 'success');
+      
+      const audioTracks = stream.getAudioTracks();
+      addMessage(`Audio tracks: ${audioTracks.length}`, 'success');
+      
+      stream.getTracks().forEach(track => track.stop());
+      
+    } catch (error) {
+      addMessage(`Audio test failed: ${error.message}`, 'error');
     }
-  };
-
-  // Recording logic
-  const handleStartRecording = () => {
-    if (!localVideoRef.current && !remoteStreams.length) return;
-    const stream = new window.MediaStream();
-    if (localVideoRef.current?.srcObject) {
-      localVideoRef.current.srcObject.getTracks().forEach(track => stream.addTrack(track));
-    }
-    if (remoteStreams.length > 0) {
-      remoteStreams.forEach(s => {
-        if (s.stream) {
-          s.stream.getTracks().forEach(track => stream.addTrack(track));
-        }
-      });
-    }
-    const recorder = new window.MediaRecorder(stream);
-    setMediaRecorder(recorder);
-    setRecordedChunks([]);
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) setRecordedChunks(prev => [...prev, e.data]);
-    };
-    recorder.onstop = () => {
-      setIsRecording(false);
-      const blob = new Blob(recordedChunks, { type: 'video/webm' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = `call-recording-${Date.now()}.webm`;
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-      }, 100);
-    };
-    recorder.start();
-    setIsRecording(true);
-    setMessages(msgs => [...msgs, '🟢 Recording started.']);
-  };
-
-  const handleStopRecording = () => {
-    if (mediaRecorder && isRecording) {
-      mediaRecorder.stop();
-      setMessages(msgs => [...msgs, '🟢 Recording stopped.']);
-    }
-  };
-
-  // Stop/Start Video logic
-  const handleToggleVideo = () => {
-    if (localStream) {
-      localStream.getVideoTracks().forEach(track => {
-        track.enabled = !videoEnabled;
-      });
-      setVideoEnabled(v => !v);
-    }
-  };
-
-  // Mute/Unmute Mic logic with better feedback
-  const handleToggleAudio = () => {
-    if (localStream) {
-      const audioTracks = localStream.getAudioTracks();
-      audioTracks.forEach(track => {
-        track.enabled = !audioEnabled;
-        console.log('🟢 [Frontend] Audio track enabled:', track.enabled);
-      });
-      setAudioEnabled(a => !a);
-      setMessages(msgs => [...msgs, `🟢 Audio ${!audioEnabled ? 'enabled' : 'disabled'}`]);
-    }
-  };
+  }, [addMessage]);
 
   return (
     <div className="video-call-container">
@@ -591,6 +561,7 @@ const VideoCall = () => {
           <li>You can use the <b>Share Screen</b>, <b>Record</b>, <b>Mute Mic</b>, and <b>Stop Video</b> buttons during the call.</li>
         </ul>
       </div>
+      
       <h2 className="video-call-title">Video Call (Beta)</h2>
       
       {/* Connection Status */}
@@ -603,6 +574,11 @@ const VideoCall = () => {
         textAlign: 'center'
       }}>
         <strong>Status:</strong> {connectionStatus}
+        {audioLevel > 0 && (
+          <div style={{ marginTop: '4px', fontSize: '12px' }}>
+            Audio Level: {Math.round(audioLevel)}%
+          </div>
+        )}
       </div>
       
       {!joined ? (
@@ -613,6 +589,7 @@ const VideoCall = () => {
             value={roomId}
             onChange={e => setRoomId(e.target.value)}
             className="video-call-input"
+            onKeyPress={e => e.key === 'Enter' && handleJoin()}
           />
           <button onClick={handleJoin} className="video-call-btn join-btn">
             Join Call
@@ -631,74 +608,108 @@ const VideoCall = () => {
               <b>Error:</b> {mediaError}
             </div>
           )}
+          
           <div className="video-call-videos">
             <div>
-              <video ref={localVideoRef} autoPlay playsInline muted className="video-call-video" />
-              <div className="video-call-label">You (Audio: {audioEnabled ? 'ON' : 'OFF'})</div>
+              <video 
+                ref={localVideoRef} 
+                autoPlay 
+                playsInline 
+                muted 
+                className="video-call-video" 
+              />
+              <div className="video-call-label">
+                You (Audio: {audioEnabled ? 'ON' : 'OFF'}, Video: {videoEnabled ? 'ON' : 'OFF'})
+              </div>
             </div>
+            
             {remoteStreams.map(({ userId }, idx) => {
               if (!remoteVideoRefs.current[userId]) {
                 remoteVideoRefs.current[userId] = React.createRef();
               }
               return (
                 <div key={userId}>
-                  <video ref={remoteVideoRefs.current[userId]} autoPlay playsInline className="video-call-video" />
-                  <div className="video-call-label">Friend {idx + 1} ({userId.slice(0, 8)}...)</div>
+                  <video 
+                    ref={remoteVideoRefs.current[userId]} 
+                    autoPlay 
+                    playsInline 
+                    className="video-call-video" 
+                  />
+                  <div className="video-call-label">
+                    Friend {idx + 1} ({userId.slice(0, 8)}...)
+                  </div>
                 </div>
               );
             })}
           </div>
+          
           <div className="video-call-controls">
-            <button className="video-call-btn share-btn" onClick={handleShareScreen} disabled={isScreenSharing || !!mediaError}>
+            <button 
+              className="video-call-btn share-btn" 
+              onClick={handleShareScreen} 
+              disabled={isScreenSharing || !!mediaError}
+            >
               {isScreenSharing ? 'Sharing...' : 'Share Screen'}
             </button>
-            <button className="video-call-btn" onClick={handleToggleVideo} disabled={!localStream || !!mediaError}>
+            
+            <button 
+              className="video-call-btn" 
+              onClick={handleToggleVideo} 
+              disabled={!localStream || !!mediaError}
+            >
               {videoEnabled ? 'Stop Video' : 'Start Video'}
             </button>
-            <button className="video-call-btn" onClick={handleToggleAudio} disabled={!localStream || !!mediaError}>
+            
+            <button 
+              className="video-call-btn" 
+              onClick={handleToggleAudio} 
+              disabled={!localStream || !!mediaError}
+            >
               {audioEnabled ? 'Mute Mic' : 'Unmute Mic'}
             </button>
+            
             {!isRecording ? (
-              <button className="video-call-btn record-btn" onClick={handleStartRecording} disabled={!!mediaError}>
+              <button 
+                className="video-call-btn record-btn" 
+                onClick={handleStartRecording} 
+                disabled={!!mediaError}
+              >
                 Record
               </button>
             ) : (
-              <button className="video-call-btn stop-record-btn" onClick={handleStopRecording} disabled={!!mediaError}>
+              <button 
+                className="video-call-btn stop-record-btn" 
+                onClick={handleStopRecording} 
+                disabled={!!mediaError}
+              >
                 Stop Recording
               </button>
             )}
+            
+            {downloadUrl && (
+              <button 
+                className="video-call-btn" 
+                onClick={handleDownloadRecording}
+                style={{ background: '#4caf50' }}
+              >
+                Download Recording
+              </button>
+            )}
+            
             <button className="video-call-btn end-btn" onClick={handleEndCall}>
               End Call
             </button>
           </div>
+          
           <div className="video-call-log">
             <b>Signaling Log:</b>
             <ul>
-              {messages.map((msg, i) => <li key={i}>{msg}</li>)}
+              {messages.slice(-10).map((msg, i) => <li key={i}>{msg}</li>)}
             </ul>
           </div>
         </div>
       )}
     </div>
   );
-};
-
-  // --- Recording controls UI ---
-  // Place these buttons near your main video UI in the render/return section
-
-  // Example (add inside your main return JSX):
-  // <div className="recording-controls">
-  //   {!isRecording && (
-  //     <button onClick={startRecording} disabled={!localStream}>Start Recording</button>
-  //   )}
-  //   {isRecording && (
-  //     <button onClick={stopRecording}>Stop Recording</button>
-  //   )}
-  //   {downloadUrl && (
-  //     <button onClick={downloadRecording}>Download Recording</button>
-  //   )}
-  //   {isRecording && <span style={{color: 'red'}}>● Recording...</span>}
-  // </div>
-
+  
 export default VideoCall;
- 
