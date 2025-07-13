@@ -10,6 +10,7 @@ import videoroutes from './Routes/video.js';
 import userroutes from "./Routes/User.js";
 import commentroutes from './Routes/comment.js';
 import groupRoutes from './Routes/group.js';
+import streamRoutes from './Routes/stream.js';
 
 dotenv.config();
 const app = express();
@@ -35,6 +36,7 @@ app.use('/user', userroutes);
 app.use('/video', videoroutes);
 app.use('/comment', commentroutes);
 app.use('/group', groupRoutes);
+app.use('/stream', streamRoutes);
 
 const server = http.createServer(app);
 
