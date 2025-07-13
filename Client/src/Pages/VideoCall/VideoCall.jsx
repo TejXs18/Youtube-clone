@@ -26,7 +26,7 @@ function VideoCall() {
     setLoading(true);
     setError(null);
     const userId = currentUser.result._id;
-    axios.get(`http://localhost:5000/stream/dev-token/${userId}`)
+    axios.get(`https://youtube-clone-pd9i.onrender.com/stream/dev-token/${userId}?apiKey=${apiKey}`)
       .then(res => {
         const userToken = res.data.token;
         const clientInstance = new StreamVideoClient({
