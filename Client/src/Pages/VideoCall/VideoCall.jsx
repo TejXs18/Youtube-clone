@@ -4,11 +4,14 @@ import {
   StreamCall,
   StreamVideoProvider,
   StreamTheme,
-  CallControls,
-  CallParticipantsList,
+  useCallStateHooks,
+  ParticipantView,
+  useCall,
 } from '@stream-io/video-react-sdk';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
+import { FaMicrophone, FaMicrophoneSlash, FaVideo, FaVideoSlash, FaPhoneSlash } from 'react-icons/fa';
+import './VideoCall.css';
 
 const apiKey = 'aemwtenush72';
 const callType = 'default';
@@ -19,19 +22,24 @@ function VideoCall() {
   const currentUser = useSelector(state => state.currentuserreducer);
   const [client, setClient] = useState(null);
   const [call, setCall] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [joined, setJoined] = useState(false);
   const [status, setStatus] = useState('In lobby');
   const [copyMsg, setCopyMsg] = useState('');
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [isJoining, setIsJoining] = useState(false);
 
   useEffect(() => {
-    if (!currentUser) return;
-    setLoading(true);
-    setError(null);
-    const userId = currentUser.result._id;
-    axios.get(`https://youtube-clone-pd9i.onrender.com/stream/dev-token/${userId}?apiKey=${apiKey}`)
-      .then(res => {
+    if (!currentUser) {
+      setIsInitializing(false);
+      return;
+    }
+    
+    const initializeClient = async () => {
+      try {
+        setError(null);
+        const userId = currentUser.result._id;
+        const res = await axios.get(`https://youtube-clone-pd9i.onrender.com/stream/dev-token/${userId}?apiKey=${apiKey}`);
         const userToken = res.data.token;
         const clientInstance = StreamVideoClient.getOrCreateInstance({
           apiKey,
@@ -39,83 +47,258 @@ function VideoCall() {
           token: userToken,
         });
         setClient(clientInstance);
-        setLoading(false);
-      })
-      .catch(err => {
+      } catch (err) {
         setError('Failed to fetch Stream token.');
-        setLoading(false);
-      });
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+
+    initializeClient();
   }, [currentUser]);
 
   useEffect(() => {
     if (client && callId && joined && !call) {
-      setCall(client.call(callType, callId));
+      const newCall = client.call(callType, callId);
+      setCall(newCall);
     }
   }, [client, callId, joined, call]);
 
   useEffect(() => {
     if (!call || !joined) return;
-    call.join();
-    setStatus('Joining...');
+    
+    const joinCall = async () => {
+      try {
+        setIsJoining(true);
+        setStatus('Joining...');
+        setError(null);
+        
+        // Create the call first
+        await call.getOrCreate();
+        
+        // Then join the call
+        await call.join();
+        
+        setStatus('Connected');
+        setIsJoining(false);
+      } catch (err) {
+        console.error('Failed to join call:', err);
+        setError(`Failed to join call: ${err.message || 'Unknown error'}`);
+        setStatus('Failed to join');
+        setIsJoining(false);
+        setJoined(false);
+        setCall(null);
+      }
+    };
+
+    joinCall();
+
     const handleParticipantJoined = (e) => setStatus('A participant joined');
     const handleParticipantLeft = (e) => setStatus('A participant left');
+    const handleCallEnded = () => {
+      setStatus('Call ended');
+      setJoined(false);
+      setCall(null);
+    };
+
     call.on('participant_joined', handleParticipantJoined);
     call.on('participant_left', handleParticipantLeft);
+    call.on('call_ended', handleCallEnded);
+
     return () => {
-      call.leave();
+      try {
+        call.leave();
+      } catch (err) {
+        console.error('Error leaving call:', err);
+      }
       call.off('participant_joined', handleParticipantJoined);
       call.off('participant_left', handleParticipantLeft);
+      call.off('call_ended', handleCallEnded);
     };
   }, [call, joined]);
 
+  const handleJoinCall = async () => {
+    if (!client || !inputCallId.trim()) return;
+    
+    try {
+      setError(null);
+      setCallId(inputCallId.trim());
+      setJoined(true);
+    } catch (err) {
+      setError('Failed to create call');
+      setJoined(false);
+    }
+  };
+
+  const handleCopyCallId = () => {
+    navigator.clipboard.writeText(callId);
+    setCopyMsg('Copied!');
+    setTimeout(() => setCopyMsg(''), 1200);
+  };
+
   if (!currentUser) {
-    return <div className="video-call-container">Please log in to join a video call.</div>;
+    return (
+      <div className="video-call-container">
+        <div className="video-call-error-card">
+          <h2>Authentication Required</h2>
+          <p>Please log in to join a video call.</p>
+        </div>
+      </div>
+    );
   }
-  if (loading || !client || !call) {
-    return <div className="video-call-container">Loading video call...</div>;
-  }
-  if (error) {
-    return <div className="video-call-container video-call-error">{error}</div>;
+
+  if (isInitializing) {
+    return (
+      <div className="video-call-container">
+        <div className="video-call-lobby">
+          <div className="video-call-header">
+            <h1 className="video-call-title">Video Call</h1>
+            <p className="video-call-subtitle">Connect with friends and family</p>
+          </div>
+          
+          <div className="video-call-instructions">
+            <h3>How to Join the Call</h3>
+            <ul>
+              <li>Enter a Call ID (room name) below</li>
+              <li>Share it with friends to join the same call</li>
+              <li>Click the <strong>Join Call</strong> button</li>
+              <li>Allow camera and microphone access if prompted</li>
+              <li>Wait for other participants to join</li>
+            </ul>
+          </div>
+          
+          <div className="video-call-join-section">
+            <div className="video-call-input-group">
+              <input
+                className="video-call-input"
+                type="text"
+                placeholder="Enter Call ID (e.g. friends123)"
+                value={inputCallId}
+                onChange={e => setInputCallId(e.target.value)}
+                disabled={isInitializing}
+              />
+              <button
+                className="video-call-join-btn"
+                disabled={!inputCallId.trim() || isInitializing}
+                onClick={handleJoinCall}
+              >
+                {isInitializing ? 'Initializing...' : 'Join Call'}
+              </button>
+            </div>
+            {error && <div className="video-call-error-message">{error}</div>}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!joined) {
     return (
-      <div className="video-call-container" style={{ textAlign: 'center' }}>
-        <h2 className="video-call-title">Minimal Video Call Lobby</h2>
-        <div className="video-call-instructions" style={{ margin: '0 auto 1.5rem auto', maxWidth: 480, background: '#181818', borderRadius: 8, padding: '1.2rem 1.5rem', color: '#eee', boxShadow: '0 2px 8px #0002' }}>
-          <h3 style={{ color: '#90caf9', fontWeight: 600, marginTop: 0 }}>How to Join the Call</h3>
-          <ul style={{ textAlign: 'left', fontSize: '1rem', margin: 0, paddingLeft: '1.2rem' }}>
-            <li>Enter a Call ID (room name) below. Share it with friends to join the same call.</li>
-            <li>Click the <b>Join Call</b> button.</li>
-            <li>Allow camera and microphone access if prompted.</li>
-            <li>Wait for other participants to join.</li>
-            <li>Use the controls at the bottom to mute, leave, or manage your call.</li>
-          </ul>
+      <div className="video-call-container">
+        <div className="video-call-lobby">
+          <div className="video-call-header">
+            <h1 className="video-call-title">Video Call</h1>
+            <p className="video-call-subtitle">Connect with friends and family</p>
+          </div>
+          
+          <div className="video-call-instructions">
+            <h3>How to Join the Call</h3>
+            <ul>
+              <li>Enter a Call ID (room name) below</li>
+              <li>Share it with friends to join the same call</li>
+              <li>Click the <strong>Join Call</strong> button</li>
+              <li>Allow camera and microphone access if prompted</li>
+              <li>Wait for other participants to join</li>
+            </ul>
+          </div>
+          
+          <div className="video-call-join-section">
+            <div className="video-call-input-group">
+              <input
+                className="video-call-input"
+                type="text"
+                placeholder="Enter Call ID (e.g. friends123)"
+                value={inputCallId}
+                onChange={e => setInputCallId(e.target.value)}
+              />
+              <button
+                className="video-call-join-btn"
+                disabled={!inputCallId.trim() || isJoining}
+                onClick={handleJoinCall}
+              >
+                {isJoining ? 'Joining...' : 'Join Call'}
+              </button>
+            </div>
+            {error && <div className="video-call-error-message">{error}</div>}
+          </div>
         </div>
-        <div className="video-call-join-box">
-          <input
-            className="video-call-input"
-            type="text"
-            placeholder="Enter Call ID (e.g. friends123)"
-            value={inputCallId}
-            onChange={e => setInputCallId(e.target.value)}
-            style={{ minWidth: 180 }}
-          />
-          <button
-            className="join-btn"
-            style={{ padding: '10px 18px', fontSize: '1rem', borderRadius: 8, background: '#1976d2', color: '#fff', border: 'none' }}
-            disabled={!inputCallId.trim()}
-            onClick={() => {
-              setCallId(inputCallId.trim());
-              setJoined(true);
-              if (client) {
-                setCall(client.call(callType, inputCallId.trim()));
-              }
-            }}
+      </div>
+    );
+  }
+
+  if (!call) {
+    return (
+      <div className="video-call-container">
+        <div className="video-call-loading">
+          <div className="video-call-spinner"></div>
+          <p>Creating call...</p>
+          {error && <div className="video-call-error-message">{error}</div>}
+        </div>
+      </div>
+    );
+  }
+
+  // Custom participant grid
+  function ParticipantGrid() {
+    const { useParticipants } = useCallStateHooks();
+    const participants = useParticipants();
+    return (
+      <div className="participant-grid">
+        {participants.map((participant) => (
+          <div
+            key={participant.sessionId}
+            className={`participant-card${participant.isLocalParticipant ? ' me' : ''}`}
           >
-            Join Call
-          </button>
-        </div>
+            <ParticipantView participant={participant} />
+            <div className="participant-name">
+              {participant.isLocalParticipant ? 'Me' : participant.user?.name || participant.userId}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Custom control bar with icons
+  function CustomCallControls() {
+    const call = useCall();
+    const { useMicrophoneState, useCameraState } = useCallStateHooks();
+    const { microphone, isMute: isMicMuted } = useMicrophoneState();
+    const { camera, isMute: isCamMuted } = useCameraState();
+
+    const handleMicToggle = async () => {
+      await microphone.toggle();
+    };
+    const handleCamToggle = async () => {
+      await camera.toggle();
+    };
+    const handleLeave = async () => {
+      await call.leave();
+      setJoined(false);
+      setCall(null);
+    };
+
+    return (
+      <div className="custom-call-controls">
+        <button className="call-control-btn" onClick={handleMicToggle} title={isMicMuted ? 'Unmute Mic' : 'Mute Mic'}>
+          {isMicMuted ? <FaMicrophoneSlash /> : <FaMicrophone />}
+        </button>
+        <button className="call-control-btn" onClick={handleCamToggle} title={isCamMuted ? 'Turn On Camera' : 'Turn Off Camera'}>
+          {isCamMuted ? <FaVideoSlash /> : <FaVideo />}
+        </button>
+        <button className="call-control-btn leave" onClick={handleLeave} title="Leave Call">
+          <FaPhoneSlash />
+        </button>
       </div>
     );
   }
@@ -124,33 +307,32 @@ function VideoCall() {
     <StreamVideoProvider client={client}>
       <StreamTheme>
         <StreamCall call={call}>
-          <div className="video-call-container" style={{ minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#18181b', borderRadius: 16, boxShadow: '0 2px 16px #0004' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 8 }}>
-              <h2 className="video-call-title" style={{ margin: 0, fontSize: '1.5rem' }}>Group Video Call</h2>
+          <div className="video-call-main">
+            <div className="video-call-header-bar">
+              <div className="video-call-header-info">
+                <h2 className="video-call-title">Group Video Call</h2>
+                <div className="video-call-status">{status}</div>
+              </div>
+              
               {callId && (
-                <>
-                  <span style={{ background: '#222', color: '#90caf9', fontSize: '1rem', borderRadius: 6, padding: '3px 10px', marginLeft: 10 }}>
-                    Call ID: <b>{callId}</b>
+                <div className="video-call-id-section">
+                  <span className="video-call-id">
+                    Call ID: <strong>{callId}</strong>
                   </span>
                   <button
-                    className="share-btn"
-                    style={{ marginLeft: 6, padding: '2px 10px', fontSize: '0.95rem', borderRadius: 6, border: 'none', cursor: 'pointer' }}
-                    onClick={() => {
-                      navigator.clipboard.writeText(callId);
-                      setCopyMsg('Copied!');
-                      setTimeout(() => setCopyMsg(''), 1200);
-                    }}
-                  >Copy</button>
-                  {copyMsg && <span style={{ color: '#90caf9', marginLeft: 6 }}>{copyMsg}</span>}
-                </>
+                    className="video-call-copy-btn"
+                    onClick={handleCopyCallId}
+                  >
+                    Copy
+                  </button>
+                  {copyMsg && <span className="video-call-copy-msg">{copyMsg}</span>}
+                </div>
               )}
             </div>
-            <div style={{ color: '#90caf9', marginBottom: 18 }}>{status}</div>
-            <div className="video-call-videos" style={{ flex: 1, width: '100%', maxWidth: 900 }}>
-              <CallParticipantsList />
-            </div>
-            <div className="video-call-controls" style={{ marginBottom: 32 }}>
-              <CallControls />
+            
+            <div className="video-call-content">
+              <ParticipantGrid />
+              <CustomCallControls />
             </div>
           </div>
         </StreamCall>
