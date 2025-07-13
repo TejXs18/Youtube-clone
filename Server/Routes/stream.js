@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 
 const router = express.Router();
 
-const apiSecret = 'YOUR_STREAM_API_SECRET'; // TODO: Replace with your real Stream API Secret (keep this safe!)
+const apiSecret = 'g7vvnduvjs2qec5h4t9taj8wh38sq2ja8ym3yqfdybdgzsaeg82ppdxwpxt4v8kg'; // Stream API Secret (keep this safe!)
 
 // Endpoint to generate a dev token for a userId
 router.get('/dev-token/:userId', (req, res) => {
