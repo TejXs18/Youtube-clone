@@ -5,6 +5,7 @@ import Likewatchlatersavebtns from './Likewatchlatersavebtns';
 import { useParams, Link } from 'react-router-dom';
 // import vid from '../../Components/Video/vid.mp4';
 import Comment from '../../Components/Comment/Comment';
+import Showvideogrid from '../../Components/Showvideogrid/Showvideogrid';
 import { useDispatch, useSelector } from 'react-redux';
 import { viewvideo } from '../../action/video';
 import { addtohistory } from '../../action/history';
@@ -59,43 +60,51 @@ const Videopage = () => {
   },[])
   return (
     <div className="container_videoPage">
-      <div className="container2_videoPage">
-        <div className="video_display_screen_videoPage">
-          <video
-            src={`https://youtube-clone-pd9i.onrender.com/${vv?.filepath}`}
-            className="video_ShowVideo_videoPage"
-            controls
-          ></video>
+      <div className="container2_videoPage" style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start' }}>
+        {/* Left: Main video, details, comments */}
+        <div style={{ flex: 2, minWidth: 0 }}>
+          <div className="video_display_screen_videoPage">
+            <video
+              src={`https://youtube-clone-pd9i.onrender.com/${vv?.filepath}`}
+              className="video_ShowVideo_videoPage"
+              controls
+            ></video>
 
-          <div className="video_details_videoPage">
-            <div className="video_btns_title_VideoPage_cont">
-              <p className="video_title_VideoPage">{vv.title}</p>
-              <div className="views_date_btns_VideoPage">
-                <div className="views_videoPage">
-                  {vv?.views} views <div className="dot"></div>{' '}
-                  {moment(vv?.createdat).fromNow()}
+            <div className="video_details_videoPage">
+              <div className="video_btns_title_VideoPage_cont">
+                <p className="video_title_VideoPage">{vv.title}</p>
+                <div className="views_date_btns_VideoPage">
+                  <div className="views_videoPage">
+                    {vv?.views} views <div className="dot"></div>{' '}
+                    {moment(vv?.createdat).fromNow()}
+                  </div>
+                  <Likewatchlatersavebtns vv={vv} vid={vidd} />
                 </div>
-                <Likewatchlatersavebtns vv={vv} vid={vidd} />
               </div>
-            </div>
 
-            <Link to="/" className="chanel_details_videoPage">
-              <b className="chanel_logo_videoPage">
-                <p>{vv.uploader?.charAt(0).toUpperCase()}</p>
-              </b>
-              <p className="chanel_name_videoPage">{vv.uploader}</p>
-            </Link>
+              <Link to="/" className="chanel_details_videoPage">
+                <b className="chanel_logo_videoPage">
+                  <p>{vv.uploader?.charAt(0).toUpperCase()}</p>
+                </b>
+                <p className="chanel_name_videoPage">{vv.uploader}</p>
+              </Link>
 
-            <div className="comments_VideoPage">
-              <h2>
-                <u>Comments</u>
-              </h2>
-              <Comment videoId={vv._id}/>
+              <div className="comments_VideoPage">
+                <h2>
+                  <u>Comments</u>
+                </h2>
+                <Comment videoId={vv._id}/>
+              </div>
             </div>
           </div>
         </div>
-
-        <div className="moreVideoBar">More Videos</div>
+        {/* Right: More Videos */}
+        <div style={{ flex: 1, minWidth: '320px', marginLeft: '2.5rem' }}>
+          <div className="moreVideoBar" style={{ marginBottom: '1rem' }}>More Videos</div>
+          {vids?.data && (
+            <Showvideogrid vid={vids.data.filter((v) => v._id !== vidd)} />
+          )}
+        </div>
       </div>
     </div>
   );

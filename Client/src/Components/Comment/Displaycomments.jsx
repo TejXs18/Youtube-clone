@@ -4,6 +4,7 @@ import moment from 'moment';
 import { useSelector, useDispatch } from 'react-redux';
 import { editcomment, deletecomment } from '../../action/comment';
 import axios from 'axios';
+import { AiFillLike, AiOutlineLike, AiFillDislike, AiOutlineDislike } from 'react-icons/ai';
 
 const BASE_URL = "https://youtube-clone-pd9i.onrender.com";
 
@@ -60,15 +61,24 @@ const Displaycomments = ({ cid, commentbody, userid, commenton, usercommented, c
   };
 
   const handleLike = () => {
+    if (!currentUser) {
+      alert('Please login to like comments');
+      return;
+    }
     dispatch({ type: 'LIKE_COMMENT', payload: { commentId: cid, userId } });
   };
 
   const handleDislike = () => {
+    if (!currentUser) {
+      alert('Please login to dislike comments');
+      return;
+    }
     dispatch({ type: 'DISLIKE_COMMENT', payload: { commentId: cid, userId } });
     if (dislikes.length + (hasDisliked ? 0 : 1) >= 2) {
       dispatch(deletecomment(cid));
     }
   };
+
 
   const handleTranslateToLanguage = async (targetLanguage) => {
     setIsTranslating(true);
@@ -143,10 +153,26 @@ const Displaycomments = ({ cid, commentbody, userid, commenton, usercommented, c
         {usercommented} ({commentcity || 'Unknown'}) commented {moment(commenton).fromNow()}
       </p>
 
-      <div className="comment_actions">
-        <button type="button" onClick={handleLike} disabled={hasLiked}>👍 {likes.length}</button>
-        <button type="button" onClick={handleDislike} disabled={hasDisliked}>👎 {dislikes.length}</button>
-        <button type="button" onClick={handleTranslate}>🌐 Translate</button>
+      <div className="comment_actions" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <button
+          type="button"
+          className={`like_videoPage btns_videoPage`}
+          onClick={handleLike}
+          disabled={hasLiked}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+        >
+          {hasLiked ? <AiFillLike color="#065fd4" size={20} /> : <AiOutlineLike size={20} />} {likes.length}
+        </button>
+        <button
+          type="button"
+          className={`like_videoPage btns_videoPage`}
+          onClick={handleDislike}
+          disabled={hasDisliked}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+        >
+          {hasDisliked ? <AiFillDislike color="#065fd4" size={20} /> : <AiOutlineDislike size={20} />} {dislikes.length}
+        </button>
+        <button type="button" onClick={handleTranslate} style={{ marginLeft: '0.5rem' }}>🌐 Translate</button>
         {currentUser?.result._id === userid && (
           <span className="EditDel_DisplayComment">
             <i onClick={() => handleEdit(cid, commentbody)}>Edit</i>

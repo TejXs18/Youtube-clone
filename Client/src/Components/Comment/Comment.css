@@ -39,6 +39,13 @@
   background-color: rgba(240, 248, 255, 0.05);
 }
 
+.like_videoPage, .btns_videoPage {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
 .display_comment_container {
   display: flex;
   flex-direction: column;
@@ -106,6 +113,15 @@
 }
 
 @media (max-width: 480px) {
+}
+
+.comment_actions button {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
   .comment_ibox {
     font-size: 0.9rem;
     padding-left: 0.6rem;
@@ -124,7 +140,7 @@
   .comment_block {
     padding: 0.5rem 0.8rem;
   }
-}
+
 
 /* Translation Styles - Matching Dark Theme */
 .comment_text_container {
@@ -157,7 +173,7 @@
 .toggle-translation-btn {
   margin-top: 0.3rem;
   background: #fffde7;
-  color: #fbc02d;
+  color: #151514;
   border: 1px solid #ffe082;
   border-radius: 5px;
   padding: 0.2rem 0.7rem;
@@ -166,10 +182,7 @@
   transition: background 0.2s, color 0.2s;
 }
 
-.toggle-translation-btn:hover {
-  background: #fff9c4;
-  color: #f9a825;
-}
+
 
 .translation-options {
   margin-top: 0.7rem;

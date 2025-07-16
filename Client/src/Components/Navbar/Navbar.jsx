@@ -116,16 +116,14 @@ const Navbar = ({ toggleDrawer, setEditCreateChannelbtn }) => {
               aria-label="Upload video"
               tabIndex={0}
             />
-            <Link to='/call' style={{ display: 'flex', alignItems: 'center' }}>
-              <MdVideoCall 
-                size={24} 
-                className='vid_bell_Navbar' 
-                role="button"
-                aria-label="Video Call"
-                tabIndex={0}
-                style={{ marginLeft: '0.3rem' }}
-              />
-            </Link>
+            <MdVideoCall 
+              size={24} 
+              className='vid_bell_Navbar' 
+              role="button"
+              aria-label="Video Call"
+              tabIndex={0}
+              style={{ marginLeft: '0.3rem' }}
+            />
             <div className="apps_box">
               {[...Array(9)].map((_, i) => <div key={i} className='appBox'></div>)}
             </div>

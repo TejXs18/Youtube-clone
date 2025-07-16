@@ -13,7 +13,7 @@ import { useSelector } from 'react-redux';
 import { FaMicrophone, FaMicrophoneSlash, FaVideo, FaVideoSlash, FaPhoneSlash } from 'react-icons/fa';
 import './VideoCall.css';
 
-const apiKey = 'aemwtenush72';
+const apiKey = import.meta.env.VITE_STREAM_API_KEY;
 const callType = 'default';
 
 function VideoCall() {
@@ -33,6 +33,16 @@ function VideoCall() {
     if (!currentUser) {
       setIsInitializing(false);
       return;
+    }
+    if (!apiKey) {
+      return (
+        <div className="video-call-container">
+          <div className="video-call-error-card">
+            <h2>API Key Missing</h2>
+            <p>Please set REACT_APP_STREAM_API_KEY in your .env file and restart the server.</p>
+          </div>
+        </div>
+      );
     }
     
     const initializeClient = async () => {
@@ -254,17 +264,23 @@ function VideoCall() {
     const participants = useParticipants();
     return (
       <div className="participant-grid">
-        {participants.map((participant) => (
-          <div
-            key={participant.sessionId}
-            className={`participant-card${participant.isLocalParticipant ? ' me' : ''}`}
-          >
-            <ParticipantView participant={participant} />
-            <div className="participant-name">
-              {participant.isLocalParticipant ? 'Me' : participant.user?.name || participant.userId}
+        {participants.map((participant) => {
+          let displayName =
+            participant.isLocalParticipant
+              ? 'Me'
+              : participant.user?.name || participant.user?.username || participant.userId;
+          return (
+            <div
+              key={participant.sessionId}
+              className={`participant-card${participant.isLocalParticipant ? ' me' : ''}`}
+            >
+              <ParticipantView participant={participant} />
+              <div className="participant-name">
+                {displayName}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   }
