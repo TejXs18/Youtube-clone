@@ -3,7 +3,6 @@ import mongoose from "mongoose";
 import dotenv from "dotenv";
 import cors from "cors";
 import path from "path";
-import { Server } from "socket.io";
 
 import videoroutes from './Routes/video.js';
 import userroutes from "./Routes/User.js";
