@@ -62,6 +62,7 @@ export const editcomment = async (req, res) => {
 };
 
 export const likecomment = async (req, res) => {
+    const io = req.app.get('io');
     const { id, userId } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -78,6 +79,8 @@ export const likecomment = async (req, res) => {
         }
 
         await targetComment.save();
+        // Emit event to all clients
+        if (io) io.emit('comment-like-updated', targetComment);
         res.status(200).json(targetComment);
     } catch (error) {
         res.status(400).json(error.message);
@@ -85,6 +88,7 @@ export const likecomment = async (req, res) => {
 };
 
 export const dislikecomment = async (req, res) => {
+    const io = req.app.get('io');
     const { id, userId } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {

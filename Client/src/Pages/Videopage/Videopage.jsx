@@ -38,7 +38,10 @@ const Videopage = () => {
   //     createdat: '2024-06-02',
   //   },
   // ];
-  const vv = vids?.data.find((v) => v._id === vidd);
+  if (!Array.isArray(vids?.data)) {
+    return <div className="container_videoPage">Loading...</div>;
+  }
+  const vv = vids.data.find((v) => v._id === vidd);
   const handleviews=()=>{
     dispatch(viewvideo({id:vidd}))
   }
