@@ -55,19 +55,6 @@ export const likecomment = (id, userId) => async (dispatch) => {
 
 // Dislike a comment (auto-delete if 2+ dislikes)
 export const dislikecomment = (id, userId) => async (dispatch) => {
-
-// Real-time update from socket
-export const updateCommentLike = (updatedComment) => ({
-  type: 'UPDATE_COMMENT_LIKE',
-  payload: updatedComment,
-});
-
-// Real-time removal from socket
-export const removeComment = (commentId) => ({
-  type: 'REMOVE_COMMENT',
-  payload: commentId,
-});
-
   try {
     const { data } = await api.dislikecomment(id, userId);
     dispatch(getallcomment());
